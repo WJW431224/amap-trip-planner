@@ -56,19 +56,22 @@ describe('dayColor', () => {
 });
 
 describe('shortName', () => {
-  it('压成 3~5 个字的简称', () => {
+  it('去掉省市区域前缀，留下地名本身', () => {
     expect(shortName('浙江省杭州市西湖区蒋村花园')).toBe('蒋村花园');
-    expect(shortName('浙江省杭州市上城区紫金港路21号')).toBe('紫金港路');
-    expect(shortName('浙江省杭州市西湖区三墩镇某某小区12幢')).toBe('某某小区');
+    expect(shortName('浙江省杭州市上城区紫金港路21号')).toBe('紫金港路21号');
+    expect(shortName('浙江省杭州市西湖区三墩镇某某小区12幢')).toBe('某某小区12幢');
   });
 
-  it('短的就不动', () => {
+  it('名字够短就不动', () => {
     expect(shortName('杭州东站')).toBe('杭州东站');
     expect(shortName('灵隐寺')).toBe('灵隐寺');
+    expect(shortName('西湖区图书馆')).toBe('西湖区图书馆');
   });
 
-  it('去掉景区、机场这类尾巴', () => {
-    expect(shortName('浙江省杭州市西湖风景名胜区')).toBe('西湖');
-    expect(shortName('北京首都国际机场T3航站楼')).toBe('北京首都');
+  it('超过 9 个字就留末尾', () => {
+    const long = '某某某某某某某某某某某某某某某某某';
+    const value = shortName(long);
+    expect(value.length).toBeLessThanOrEqual(9);
+    expect(long.endsWith(value)).toBe(true);
   });
 });

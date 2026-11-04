@@ -39,58 +39,40 @@ export function makeId(): string {
 }
 
 const ADMIN_PREFIX = /^[一-龥]{2,12}?(省|市|区|县|镇|乡|街道|自治区|特别行政区)/;
-const TRAILING_DETAIL = /(\d+[号幢栋楼室层单元铺]?|\d+[-—]\d+号?|[一二三四五六七八九十]+[号幢栋楼室层单元]|[A-Za-z]?\d+[号幢栋楼室层单元])+$/;
-const TYPE_SUFFIX =
-  /(风景名胜区|名胜区|风景区|景区|开发区|高新区|工业园|科技园|产业园|创业园|家园|花园|小区|公寓|写字楼|大厦|广场|公园|国际机场|机场|航站楼|火车站|高铁站|汽车站|购物中心|商城|市场|中心|大学|学院|学校|中学|小学|校区|医院|酒店|宾馆|委员会|管委会|政府|园|馆|站)$/;
 
 /**
- * 地图选点常常拿到一整串地址（浙江省杭州市西湖区蒋村花园），
- * 列表里放不下，这里压成 3～5 个字的简称。
- * 顺序：去掉省市区分公司 → 去掉「12号/3幢」→ 去掉「景区/科技园」这类尾巴 → 还长就截断。
- * 每步只在还超过 limit 时继续，避免把「蒋村花园」削成「蒋村」。
- * 完整名称保留在原字段里，鼠标悬停能看到。
+ * 地图选点常常拿到一整串地址（浙江省杭州市西湖区蒋村花园）。
+ * 简称的做法是：先把省市区域这些前缀去掉，剩下的是有辨识度的地名；
+ * 如果还是太长，就保留末尾那几个字（末尾通常才是真正的标志物）。
+ * 完整名称仍然保留在原字段里，鼠标悬停能看到，也能用铅笔自己改。
  */
-export function shortName(raw: string, city?: string, limit = 5): string {
+export function shortName(raw: string, city?: string, limit = 9): string {
   const full = (raw ?? '').replace(/\s+/g, ' ').trim();
   if (!full) return full;
   if (full.length <= limit) return full;
 
   let name = full.replace(/^(中国|中华人民共和国)/, '');
 
-  // 1. 当前城市名往往和「XX市」重复，先去掉。
+  // 当前城市名往往和「XX市」重复，先去掉。
   const cityName = (city ?? '').trim().replace(/(市|地区|自治州)$/, '');
   if (cityName.length >= 2) {
     const stripped = name.replace(new RegExp(`^${cityName}(市)?`), '');
     if (stripped && stripped !== name) name = stripped;
   }
 
-  // 2. 省 / 市 / 区 / 镇 这类行政前缀。
-  for (let round = 0; round < 4 && name.length > limit; round += 1) {
+  // 省 / 市 / 区 / 镇 这类行政前缀：能去掉就去掉，但至少留 4 个字，
+  // 免得把「西湖区图书馆」削成「图书馆」。
+  for (let round = 0; round < 4; round += 1) {
     const next = name.replace(ADMIN_PREFIX, '');
-    if (next === name || !next) break;
+    if (next === name || next.length < 4) break;
     name = next;
   }
 
-  // 3. 门牌、幢号这类尾部细节。
-  if (name.length > limit) {
-    const next = name
-      .replace(TRAILING_DETAIL, '')
-      .replace(/[A-Za-z]+[\d.\-]*$/, '')
-      .trim();
-    if (next) name = next;
-  }
+  if (name.length <= limit) return name;
 
-  // 4. 景区、科技园、小区这类通名后缀；「北京首都国际机场T3航站楼」这种要削两层。
-  for (let round = 0; round < 2 && name.length > limit; round += 1) {
-    const next = name
-      .replace(TYPE_SUFFIX, '')
-      .replace(/[A-Za-z]*\d+$/, '')
-      .trim();
-    if (!next || next === name || next.length < 2) break;
-    name = next;
-  }
-
-  // 5. 还是太长，只好截断。
-  if (name.length > limit) name = name.slice(0, limit);
-  return name || full;
+  // 还是太长：留末尾 limit 个字，末尾一般是真正要去的地方。
+  const tail = name.slice(-limit);
+  const cutAt = tail.search(/[区县市镇乡街道]/);
+  const trimmed = cutAt > 0 ? tail.slice(cutAt + 1) : tail;
+  return (trimmed.length >= 2 ? trimmed : tail).trim() || name;
 }
