@@ -73,6 +73,8 @@ export function shortName(raw: string, city?: string, limit = 9): string {
   // 还是太长：留末尾 limit 个字，末尾一般是真正要去的地方。
   const tail = name.slice(-limit);
   const cutAt = tail.search(/[区县市镇乡街道]/);
-  const trimmed = cutAt > 0 ? tail.slice(cutAt + 1) : tail;
-  return (trimmed.length >= 2 ? trimmed : tail).trim() || name;
+  const base = cutAt > 0 ? tail.slice(cutAt + 1) : tail;
+  // 截断处可能正好落在「-」「·」「、」上，去掉开头的符号和数字。
+  const cleaned = base.replace(/^[^一-龥A-Za-z]+/, '');
+  return (cleaned.length >= 2 ? cleaned : base).trim() || name;
 }
