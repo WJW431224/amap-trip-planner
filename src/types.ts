@@ -59,7 +59,7 @@ export interface Leg {
   error?: string;
 }
 
-export const MAX_POINTS = 20;
+export const MAX_POINTS = 60;
 export const MAX_DAYS = 14;
 
 export const MODE_LABELS: Record<TravelMode, string> = {

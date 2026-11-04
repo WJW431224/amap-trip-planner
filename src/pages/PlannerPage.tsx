@@ -420,6 +420,10 @@ export default function PlannerPage({ credentials }: PlannerPageProps) {
     applyUserAction({ type: 'SET_POINT_SLOT', id, slot });
   }
 
+  function handlePointRename(id: string, name: string) {
+    applyUserAction({ type: 'UPDATE_POINT', id, patch: { name } });
+  }
+
   const pointsKey = state.points
     .map(
       (point) =>
@@ -862,6 +866,8 @@ export default function PlannerPage({ credentials }: PlannerPageProps) {
             onAddDay={handleAddDay}
             onPointDayChange={handlePointDayChange}
             onPointSlotChange={handlePointSlotChange}
+            onRename={handlePointRename}
+            city={state.city}
             onMove={(id, direction) => {
               applyUserAction({ type: 'MOVE_POINT', id, direction });
             }}

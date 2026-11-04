@@ -264,6 +264,26 @@ export function ChevronRight({ size = 15, className }: IconProps) {
   );
 }
 
+export function Pencil({ size = 15, className }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M4 20h4l10-10a2.8 2.8 0 0 0-4-4L4 16z" />
+      <path d="m13.5 6.5 4 4" />
+    </svg>
+  );
+}
+
 export function Trash({ size = 15, className }: IconProps) {
   return (
     <svg

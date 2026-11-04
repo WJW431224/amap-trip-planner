@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { MAX_POINTS } from '../types';
 import { sanitizePoints } from './persistence';
 
 describe('sanitizePoints', () => {
@@ -29,12 +30,12 @@ describe('sanitizePoints', () => {
   });
 
   it('caps points at the maximum', () => {
-    const points = Array.from({ length: 30 }, (_, index) => ({
+    const points = Array.from({ length: MAX_POINTS + 10 }, (_, index) => ({
       id: String(index),
       name: `P${index}`,
       coord: { lng: 120 + index * 0.001, lat: 30 + index * 0.001 },
     }));
 
-    expect(sanitizePoints(points)).toHaveLength(20);
+    expect(sanitizePoints(points)).toHaveLength(MAX_POINTS);
   });
 });

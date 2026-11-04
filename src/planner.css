@@ -1981,3 +1981,30 @@
   gap: 3px;
   flex-shrink: 0;
 }
+
+/* 点名字后面的小铅笔：自己改成 3～5 个字的简称 */
+.name-edit {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  color: #a8b2ab;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  opacity: 0.35;
+  transition: opacity 150ms ease, color 150ms ease, background 150ms ease;
+}
+
+.point-item:hover .name-edit,
+.point-item:focus-within .name-edit {
+  opacity: 1;
+}
+
+.name-edit:hover {
+  color: #9c4d00;
+  background: #fff1e0;
+}

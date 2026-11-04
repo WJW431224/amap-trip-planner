@@ -6,6 +6,7 @@ import {
   ChevronUp,
   Locate,
   MapPin,
+  Pencil,
   Trash,
 } from '../../components/Icons';
 
@@ -17,6 +18,8 @@ interface PointPanelProps {
   onAddDay: () => void;
   onPointDayChange: (id: string, day: number) => void;
   onPointSlotChange: (id: string, slot: TimeSlot) => void;
+  onRename: (id: string, name: string) => void;
+  city: string;
   onMove: (id: string, direction: -1 | 1) => void;
   onRemove: (id: string) => void;
   onClear: () => void;
@@ -31,6 +34,8 @@ export default function PointPanel({
   onAddDay,
   onPointDayChange,
   onPointSlotChange,
+  onRename,
+  city,
   onMove,
   onRemove,
   onClear,
@@ -129,7 +134,19 @@ export default function PointPanel({
 
                           <div className="point-copy">
                             <div className="point-name-row">
-                              <strong title={point.name}>{shortName(point.name)}</strong>
+                              <strong title={point.name}>{shortName(point.name, city)}</strong>
+                      <button
+                        type="button"
+                        className="name-edit"
+                        onClick={() => {
+                          const next = window.prompt('改个短名字（建议 3～5 个字）', shortName(point.name, city));
+                          if (next && next.trim()) onRename(point.id, next.trim().slice(0, 24));
+                        }}
+                        aria-label={`重命名 ${point.name}`}
+                        title="改名字"
+                      >
+                        <Pencil size={11} />
+                      </button>
                               <span className={`point-role ${kind}`}>{label}</span>
                             </div>
                             <div className="point-sub-row">
