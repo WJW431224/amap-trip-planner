@@ -1,4 +1,4 @@
-import type { TravelMode, TripPoint } from '../types';
+import type { TravelMode, TripPoint, TimeSlot } from '../types';
 import { MAX_DAYS, MAX_POINTS } from '../types';
 import type { TripSnapshot } from './tripReducer';
 
@@ -44,6 +44,8 @@ function sanitizePoint(value: unknown): TripPoint | null {
   const day = Number.isInteger(rawDay)
     ? Math.min(MAX_DAYS, Math.max(1, rawDay))
     : 1;
+  const slot: TimeSlot =
+    raw.slot === 'pm' || raw.slot === 'night' ? raw.slot : 'am';
 
   return {
     id,
@@ -52,6 +54,7 @@ function sanitizePoint(value: unknown): TripPoint | null {
     address: address || undefined,
     source: raw.source === 'search' ? 'search' : 'map',
     day,
+    slot,
   };
 }
 

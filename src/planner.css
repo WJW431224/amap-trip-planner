@@ -1901,3 +1901,62 @@
     transition: none;
   }
 }
+
+/* 每天里的时段分组：上午 / 下午 / 晚上 */
+.slot-block {
+  padding: 2px 0 4px;
+}
+
+.slot-block + .slot-block {
+  border-top: 1px dashed var(--line);
+}
+
+.slot-head {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 7px 8px 5px;
+  color: #4c5a51;
+  font-size: 10.5px;
+}
+
+.slot-head strong {
+  font-weight: 600;
+}
+
+.slot-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #c8d3cb;
+}
+
+.slot-dot.am {
+  background: #f0b429;
+}
+
+.slot-dot.pm {
+  background: #3f8f6b;
+}
+
+.slot-dot.night {
+  background: #5b6bb5;
+}
+
+.slot-count {
+  color: #9aa59d;
+  font-size: 9px;
+}
+
+.slot-empty {
+  margin: 0 8px 6px;
+  color: #a8b2ab;
+  font-size: 9.5px;
+  line-height: 1.5;
+}
+
+.point-selects {
+  display: flex;
+  gap: 3px;
+  flex-shrink: 0;
+}

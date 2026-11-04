@@ -7,6 +7,22 @@ export interface LngLat {
 
 export type PointSource = 'search' | 'map';
 
+/** 同一天里的时段分组。 */
+export type TimeSlot = 'am' | 'pm' | 'night';
+
+export const TIME_SLOTS: TimeSlot[] = ['am', 'pm', 'night'];
+
+export const SLOT_LABELS: Record<TimeSlot, string> = {
+  am: '上午',
+  pm: '下午',
+  night: '晚上',
+};
+
+export function slotRank(slot: TimeSlot): number {
+  const index = TIME_SLOTS.indexOf(slot);
+  return index < 0 ? 0 : index;
+}
+
 export interface TripPoint {
   id: string;
   name: string;
@@ -14,6 +30,7 @@ export interface TripPoint {
   address?: string;
   source: PointSource;
   day: number;
+  slot: TimeSlot;
 }
 
 export interface TransitSummary {

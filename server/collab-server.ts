@@ -25,6 +25,7 @@ const USER_ACTIONS = new Set<TripAction['type']>([
   'REMOVE_POINT',
   'MOVE_POINT',
   'SET_POINT_DAY',
+  'SET_POINT_SLOT',
   'CLEAR_POINTS',
   'SET_MODE',
   'SET_CITY',

@@ -33,6 +33,7 @@ import {
   type LngLat,
   type TravelMode,
   type TripPoint,
+  type TimeSlot,
 } from '../types';
 import { makeId, pointLetter } from '../lib/format';
 import {
@@ -306,9 +307,9 @@ export default function PlannerPage({ credentials }: PlannerPageProps) {
 
     const id = makeId();
     const day = activeDayRef.current;
-    const index = stateRef.current.points.filter(
-      (point) => point.day === day,
-    ).length;
+    const dayPoints = stateRef.current.points.filter((point) => point.day === day);
+    const index = dayPoints.length;
+    const slot = dayPoints[dayPoints.length - 1]?.slot ?? 'am';
 
     const added = applyUserAction({
       type: 'ADD_POINT',
@@ -318,6 +319,7 @@ export default function PlannerPage({ credentials }: PlannerPageProps) {
         coord,
         source: 'map',
         day,
+        slot,
       },
     });
     if (!added) return;
@@ -381,9 +383,9 @@ export default function PlannerPage({ credentials }: PlannerPageProps) {
 
     const id = makeId();
     const day = activeDayRef.current;
-    const index = stateRef.current.points.filter(
-      (point) => point.day === day,
-    ).length;
+    const dayPoints = stateRef.current.points.filter((point) => point.day === day);
+    const index = dayPoints.length;
+    const slot = dayPoints[dayPoints.length - 1]?.slot ?? 'am';
 
     const point: TripPoint = {
       id,
@@ -392,6 +394,7 @@ export default function PlannerPage({ credentials }: PlannerPageProps) {
       coord: place.coord,
       source: 'search',
       day,
+      slot,
     };
 
     const added = applyUserAction({ type: 'ADD_POINT', point });
@@ -411,6 +414,10 @@ export default function PlannerPage({ credentials }: PlannerPageProps) {
   function handlePointDayChange(id: string, day: number) {
     if (!applyUserAction({ type: 'SET_POINT_DAY', id, day })) return;
     setActiveDay(day);
+  }
+
+  function handlePointSlotChange(id: string, slot: TimeSlot) {
+    applyUserAction({ type: 'SET_POINT_SLOT', id, slot });
   }
 
   const pointsKey = state.points
@@ -854,6 +861,7 @@ export default function PlannerPage({ credentials }: PlannerPageProps) {
             onDayChange={setActiveDay}
             onAddDay={handleAddDay}
             onPointDayChange={handlePointDayChange}
+            onPointSlotChange={handlePointSlotChange}
             onMove={(id, direction) => {
               applyUserAction({ type: 'MOVE_POINT', id, direction });
             }}

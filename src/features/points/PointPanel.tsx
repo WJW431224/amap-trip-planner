@@ -1,4 +1,5 @@
-import type { TripPoint } from '../../types';
+import type { TimeSlot, TripPoint } from '../../types';
+import { SLOT_LABELS, TIME_SLOTS } from '../../types';
 import { pointLetter } from '../../lib/format';
 import {
   ChevronDown,
@@ -15,6 +16,7 @@ interface PointPanelProps {
   onDayChange: (day: number) => void;
   onAddDay: () => void;
   onPointDayChange: (id: string, day: number) => void;
+  onPointSlotChange: (id: string, slot: TimeSlot) => void;
   onMove: (id: string, direction: -1 | 1) => void;
   onRemove: (id: string) => void;
   onClear: () => void;
@@ -28,12 +30,14 @@ export default function PointPanel({
   onDayChange,
   onAddDay,
   onPointDayChange,
+  onPointSlotChange,
   onMove,
   onRemove,
   onClear,
   onLocate,
 }: PointPanelProps) {
   const activePoints = points.filter((point) => point.day === activeDay);
+  const orderIndex = new Map(activePoints.map((point, index) => [point.id, index]));
 
   return (
     <section className="points-block">
@@ -90,97 +94,134 @@ export default function PointPanel({
         </div>
       ) : (
         <>
-          <ol className="point-list">
-            {activePoints.map((point, index) => {
-              const isFirst = index === 0;
-              const isLast = index === activePoints.length - 1;
-              const kind = isFirst ? 'start' : isLast ? 'end' : 'mid';
-              const label = isFirst
-                ? '起点'
-                : isLast
-                  ? '终点'
-                  : `途经 ${index}`;
+          {TIME_SLOTS.map((slot) => {
+            const slotPoints = activePoints.filter((point) => point.slot === slot);
 
-              return (
-                <li className="point-item" key={point.id}>
-                  <span className={`point-badge ${kind}`}>
-                    {pointLetter(index)}
-                  </span>
+            return (
+              <div className="slot-block" key={slot}>
+                <div className="slot-head">
+                  <span className={`slot-dot ${slot}`} aria-hidden="true" />
+                  <strong>{SLOT_LABELS[slot]}</strong>
+                  <span className="slot-count">{slotPoints.length}</span>
+                </div>
 
-                  <div className="point-copy">
-                    <div className="point-name-row">
-                      <strong>{point.name}</strong>
-                      <span className={`point-role ${kind}`}>{label}</span>
-                    </div>
-                    <div className="point-sub-row">
-                      <small>
-                        {point.address ||
-                          `${point.coord.lng.toFixed(5)}, ${point.coord.lat.toFixed(5)}`}
-                      </small>
-                      <select
-                        className="point-day-select"
-                        value={point.day}
-                        onChange={(event) =>
-                          onPointDayChange(point.id, Number(event.target.value))
-                        }
-                        aria-label={`${point.name} 所属天数`}
-                        title="调整所属天数"
-                      >
-                        {days.map((day) => (
-                          <option value={day} key={day}>
-                            D{day}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
+                {slotPoints.length === 0 ? (
+                  <p className="slot-empty">还没有安排</p>
+                ) : (
+                  <ol className="point-list">
+                    {slotPoints.map((point) => {
+                      const index = orderIndex.get(point.id) ?? 0;
+                      const isFirst = index === 0;
+                      const isLast = index === activePoints.length - 1;
+                      const kind = isFirst ? 'start' : isLast ? 'end' : 'mid';
+                      const label = isFirst
+                        ? '起点'
+                        : isLast
+                          ? '终点'
+                          : `途经 ${index}`;
 
-                  <div className="point-actions">
-                    <button
-                      type="button"
-                      className="icon-button tiny"
-                      onClick={() => onLocate(point)}
-                      aria-label={`定位到 ${point.name}`}
-                      title="定位"
-                    >
-                      <Locate size={14} />
-                    </button>
-                    <button
-                      type="button"
-                      className="icon-button tiny"
-                      onClick={() => onMove(point.id, -1)}
-                      disabled={index === 0}
-                      aria-label="上移"
-                      title="上移"
-                    >
-                      <ChevronUp size={14} />
-                    </button>
-                    <button
-                      type="button"
-                      className="icon-button tiny"
-                      onClick={() => onMove(point.id, 1)}
-                      disabled={index === activePoints.length - 1}
-                      aria-label="下移"
-                      title="下移"
-                    >
-                      <ChevronDown size={14} />
-                    </button>
-                    <button
-                      type="button"
-                      className="icon-button tiny danger"
-                      onClick={() => onRemove(point.id)}
-                      aria-label={`删除 ${point.name}`}
-                      title="删除"
-                    >
-                      <Trash size={14} />
-                    </button>
-                  </div>
-                </li>
-              );
-            })}
-          </ol>
+                      return (
+                        <li className="point-item" key={point.id}>
+                          <span className={`point-badge ${kind}`}>
+                            {pointLetter(index)}
+                          </span>
+
+                          <div className="point-copy">
+                            <div className="point-name-row">
+                              <strong>{point.name}</strong>
+                              <span className={`point-role ${kind}`}>{label}</span>
+                            </div>
+                            <div className="point-sub-row">
+                              <small>
+                                {point.address ||
+                                  `${point.coord.lng.toFixed(5)}, ${point.coord.lat.toFixed(5)}`}
+                              </small>
+                              <div className="point-selects">
+                                <select
+                                  className="point-day-select"
+                                  value={point.day}
+                                  onChange={(event) =>
+                                    onPointDayChange(point.id, Number(event.target.value))
+                                  }
+                                  aria-label={`${point.name} 所属天数`}
+                                  title="调整所属天数"
+                                >
+                                  {days.map((day) => (
+                                    <option value={day} key={day}>
+                                      D{day}
+                                    </option>
+                                  ))}
+                                </select>
+                                <select
+                                  className="point-day-select"
+                                  value={point.slot}
+                                  onChange={(event) =>
+                                    onPointSlotChange(point.id, event.target.value as TimeSlot)
+                                  }
+                                  aria-label={`${point.name} 所属时段`}
+                                  title="调整所属时段"
+                                >
+                                  {TIME_SLOTS.map((item) => (
+                                    <option value={item} key={item}>
+                                      {SLOT_LABELS[item]}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="point-actions">
+                            <button
+                              type="button"
+                              className="icon-button tiny"
+                              onClick={() => onLocate(point)}
+                              aria-label={`定位到 ${point.name}`}
+                              title="定位"
+                            >
+                              <Locate size={14} />
+                            </button>
+                            <button
+                              type="button"
+                              className="icon-button tiny"
+                              onClick={() => onMove(point.id, -1)}
+                              disabled={index === 0}
+                              aria-label="上移"
+                              title="上移"
+                            >
+                              <ChevronUp size={14} />
+                            </button>
+                            <button
+                              type="button"
+                              className="icon-button tiny"
+                              onClick={() => onMove(point.id, 1)}
+                              disabled={index === activePoints.length - 1}
+                              aria-label="下移"
+                              title="下移"
+                            >
+                              <ChevronDown size={14} />
+                            </button>
+                            <button
+                              type="button"
+                              className="icon-button tiny danger"
+                              onClick={() => onRemove(point.id)}
+                              aria-label={`删除 ${point.name}`}
+                              title="删除"
+                            >
+                              <Trash size={14} />
+                            </button>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ol>
+                )}
+              </div>
+            );
+          })}
           <p className="panel-hint">
-            每天独立成一条路线；拖动地图上的字母图钉可以微调位置。
+            每天独立成一条路线；同一天里按上午 → 下午 → 晚上依次串联。
+            拖动地图上的字母图钉可以微调位置。
           </p>
         </>
       )}

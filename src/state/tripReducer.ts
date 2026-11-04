@@ -1,5 +1,18 @@
-import type { Leg, LngLat, TravelMode, TripPoint } from '../types';
-import { MAX_POINTS } from '../types';
+import type { Leg, LngLat, TravelMode, TripPoint, TimeSlot } from '../types';
+import { MAX_POINTS, slotRank } from '../types';
+
+/** 同一天内按「上午 → 下午 → 晚上」排序后，找到新点应插入的位置。 */
+function insertIndexFor(
+  points: TripPoint[],
+  day: number,
+  slot: TimeSlot,
+): number {
+  const target = day * 10 + slotRank(slot);
+  const index = points.findIndex(
+    (point) => point.day * 10 + slotRank(point.slot) > target,
+  );
+  return index < 0 ? points.length : index;
+}
 
 export interface TripSnapshot {
   points: TripPoint[];
@@ -23,6 +36,7 @@ export type TripAction =
   | { type: 'REMOVE_POINT'; id: string }
   | { type: 'MOVE_POINT'; id: string; direction: -1 | 1 }
   | { type: 'SET_POINT_DAY'; id: string; day: number }
+  | { type: 'SET_POINT_SLOT'; id: string; slot: TimeSlot }
   | { type: 'CLEAR_POINTS' }
   | { type: 'SET_MODE'; mode: TravelMode }
   | { type: 'SET_CITY'; city: string }
@@ -59,11 +73,13 @@ export function tripReducer(state: TripState, action: TripAction): TripState {
     case 'ADD_POINT': {
       if (state.points.length >= MAX_POINTS) return state;
 
-      // 保持同一天的点连续，避免跨天插在中间导致排序/路线分段混乱。
+      // 先按天分组，再按天内的时段分组，保证顺序和面板上看到的一致。
       const points = [...state.points];
-      let insertAt = points.findIndex((point) => point.day > action.point.day);
-      if (insertAt < 0) insertAt = points.length;
-      points.splice(insertAt, 0, action.point);
+      points.splice(
+        insertIndexFor(points, action.point.day, action.point.slot),
+        0,
+        action.point,
+      );
 
       return {
         ...state,
@@ -103,8 +119,10 @@ export function tripReducer(state: TripState, action: TripAction): TripState {
         return state;
       }
 
-      // 只允许在同一天内调整顺序，跨天移动走 SET_POINT_DAY。
-      if (state.points[nextIndex].day !== state.points[index].day) {
+      // 只允许在同一天、同一时段内调整顺序；跨天走 SET_POINT_DAY，跨时段走 SET_POINT_SLOT。
+      const current = state.points[index];
+      const neighbor = state.points[nextIndex];
+      if (neighbor.day !== current.day || neighbor.slot !== current.slot) {
         return state;
       }
 
@@ -118,10 +136,26 @@ export function tripReducer(state: TripState, action: TripAction): TripState {
       if (!point || point.day === action.day) return state;
 
       const rest = state.points.filter((item) => item.id !== action.id);
-      let insertAt = rest.findIndex((item) => item.day > action.day);
-      if (insertAt < 0) insertAt = rest.length;
+      const insertAt = insertIndexFor(rest, action.day, point.slot);
 
       const moved = { ...point, day: action.day };
+      const points = [
+        ...rest.slice(0, insertAt),
+        moved,
+        ...rest.slice(insertAt),
+      ];
+
+      return { ...state, points, ...EMPTY_ROUTE };
+    }
+
+    case 'SET_POINT_SLOT': {
+      const point = state.points.find((item) => item.id === action.id);
+      if (!point || point.slot === action.slot) return state;
+
+      const rest = state.points.filter((item) => item.id !== action.id);
+      const insertAt = insertIndexFor(rest, point.day, action.slot);
+
+      const moved = { ...point, slot: action.slot };
       const points = [
         ...rest.slice(0, insertAt),
         moved,

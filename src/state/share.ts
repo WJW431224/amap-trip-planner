@@ -1,4 +1,4 @@
-import type { TravelMode, TripPoint } from '../types';
+import type { TravelMode, TimeSlot, TripPoint } from '../types';
 import { MAX_DAYS, MAX_POINTS } from '../types';
 import type { TripSnapshot } from './tripReducer';
 import { loadSavedTrip, DEFAULT_CITY, MODES } from './persistence';
@@ -10,6 +10,7 @@ interface SharedPoint {
   y: number;
   s?: 'search' | 'map';
   d?: number;
+  t?: TimeSlot;
 }
 
 interface SharedTrip {
@@ -53,6 +54,7 @@ export function encodeTrip(snapshot: TripSnapshot): string {
       y: Number(point.coord.lat.toFixed(6)),
       ...(point.source === 'search' ? { s: 'search' as const } : {}),
       ...(point.day > 1 ? { d: point.day } : {}),
+      ...(point.slot !== 'am' ? { t: point.slot } : {}),
     })),
     m: snapshot.mode,
     c: snapshot.city,
@@ -82,6 +84,8 @@ function decodeSharedTrip(value: string): TripSnapshot | null {
       const day = Number.isInteger(rawDay)
         ? Math.min(MAX_DAYS, Math.max(1, rawDay))
         : 1;
+      const slot: TimeSlot =
+        raw.t === 'pm' || raw.t === 'night' ? raw.t : 'am';
 
       points.push({
         id: `shared-${index}-${Date.now()}`,
@@ -96,6 +100,7 @@ function decodeSharedTrip(value: string): TripSnapshot | null {
         coord: { lng, lat },
         source: raw.s === 'search' ? 'search' : 'map',
         day,
+        slot,
       });
     }
 

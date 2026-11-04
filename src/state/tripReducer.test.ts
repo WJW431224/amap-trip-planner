@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Leg, TripPoint } from '../types';
+import type { Leg, TimeSlot, TripPoint } from '../types';
 import { createTripState, tripReducer } from './tripReducer';
 
 const base = createTripState({
@@ -14,6 +14,7 @@ function point(
   lng: number,
   lat: number,
   day = 1,
+  slot: TimeSlot = 'am',
 ): TripPoint {
   return {
     id,
@@ -21,6 +22,7 @@ function point(
     coord: { lng, lat },
     source: 'search',
     day,
+    slot,
   };
 }
 
