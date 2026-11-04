@@ -1,6 +1,6 @@
 import type { TimeSlot, TripPoint } from '../../types';
 import { SLOT_LABELS, TIME_SLOTS } from '../../types';
-import { pointLetter } from '../../lib/format';
+import { pointLetter, shortName } from '../../lib/format';
 import {
   ChevronDown,
   ChevronUp,
@@ -129,7 +129,7 @@ export default function PointPanel({
 
                           <div className="point-copy">
                             <div className="point-name-row">
-                              <strong>{point.name}</strong>
+                              <strong title={point.name}>{shortName(point.name)}</strong>
                               <span className={`point-role ${kind}`}>{label}</span>
                             </div>
                             <div className="point-sub-row">

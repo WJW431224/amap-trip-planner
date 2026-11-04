@@ -5,6 +5,7 @@ import {
   formatDuration,
   pointLetter,
   dayColor,
+  shortName,
 } from '../../lib/format';
 import {
   ArrowUpRight,
@@ -80,8 +81,8 @@ export default function RoutePanel({
     return {
       from: pointLetter(Math.max(0, fromIndex)),
       to: pointLetter(Math.max(0, toIndex)),
-      fromName: pointAt(leg.fromId)?.name ?? '起点',
-      toName: pointAt(leg.toId)?.name ?? '终点',
+      fromName: shortName(pointAt(leg.fromId)?.name ?? '起点'),
+      toName: shortName(pointAt(leg.toId)?.name ?? '终点'),
     };
   }
 

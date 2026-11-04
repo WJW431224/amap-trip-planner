@@ -4,6 +4,7 @@ import {
   formatDistance,
   formatDuration,
   pointLetter,
+  shortName,
 } from './format';
 
 describe('formatDistance', () => {
@@ -51,5 +52,22 @@ describe('dayColor', () => {
     expect(dayColor(1)).not.toBe(dayColor(2));
     expect(dayColor(2)).not.toBe(dayColor(3));
     expect(dayColor(1)).toBe(dayColor(6));
+  });
+});
+
+describe('shortName', () => {
+  it('去掉省市区的行政前缀', () => {
+    expect(shortName('浙江省杭州市西湖区蒋村花园')).toBe('蒋村花园');
+    expect(shortName('浙江省杭州市上城区紫金港路21号')).toBe('紫金港路21号');
+  });
+
+  it('短名字不动', () => {
+    expect(shortName('杭州东站')).toBe('杭州东站');
+    expect(shortName('西湖区图书馆')).toBe('西湖区图书馆');
+  });
+
+  it('太长才截断', () => {
+    const value = shortName('某某某某某某某某某某某某某某某某某某');
+    expect(value.endsWith('…')).toBe(true);
   });
 });
