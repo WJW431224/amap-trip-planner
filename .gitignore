@@ -10,3 +10,4 @@ data
 
 deno-dist
 deno/assets.gen.ts
+*.zip

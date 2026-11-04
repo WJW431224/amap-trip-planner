@@ -1,0 +1,50 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # 静态版：不带协作后端，资源用相对路径，放在 /<repo>/ 子路径下也能跑。
+      # AMAP_KEY / AMAP_SECURITY_CODE 在仓库 Settings → Variables 里配置。
+      - run: npm run build:static
+        env:
+          VITE_STATIC: '1'
+          VITE_AMAP_KEY: ${{ vars.AMAP_KEY }}
+          VITE_AMAP_SECURITY_CODE: ${{ vars.AMAP_SECURITY_CODE }}
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
