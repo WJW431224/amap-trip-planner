@@ -10,6 +10,7 @@ import { clearStoredCredentials } from '../config/credentials';
 import { explainAmapError, type AmapErrorInfo } from '../config/amap';
 import { useCollab } from '../collab/useCollab';
 import CollabModal from '../components/CollabModal';
+import { IS_STATIC_BUILD } from '../config/build';
 import { MapCanvas, type MapCanvasHandle } from '../features/map/MapCanvas';
 import SearchBox, { type PlaceResult } from '../features/search/SearchBox';
 import PointPanel from '../features/points/PointPanel';
@@ -194,7 +195,7 @@ export default function PlannerPage({ credentials }: PlannerPageProps) {
   const [activeDay, setActiveDay] = useState(() =>
     Math.max(1, ...state.points.map((point) => point.day)),
   );
-  const [roomId, setRoomId] = useState<string | null>(readRoomId);
+  const [roomId, setRoomId] = useState<string | null>(IS_STATIC_BUILD ? null : readRoomId);
   const [collabOpen, setCollabOpen] = useState(false);
 
   const collab = useCollab({
@@ -752,6 +753,7 @@ export default function PlannerPage({ credentials }: PlannerPageProps) {
         </div>
 
         <div className="planner-actions">
+          {IS_STATIC_BUILD ? null : (
           <button
             type="button"
             className={`topbar-button collab-button ${collab.status}`}
@@ -764,6 +766,7 @@ export default function PlannerPage({ credentials }: PlannerPageProps) {
               <i className={`collab-dot ${collab.status}`} aria-hidden="true" />
             ) : null}
           </button>
+          )}
           <button
             type="button"
             className="topbar-button"
@@ -1001,6 +1004,7 @@ export default function PlannerPage({ credentials }: PlannerPageProps) {
         ) : null}
       </main>
 
+      {IS_STATIC_BUILD ? null : (
       <CollabModal
         open={collabOpen}
         roomId={roomId}
@@ -1016,6 +1020,7 @@ export default function PlannerPage({ credentials }: PlannerPageProps) {
         }}
         onLeave={leaveCollab}
       />
+      )}
     </div>
   );
 }
