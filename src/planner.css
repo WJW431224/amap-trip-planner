@@ -637,11 +637,32 @@
 }
 
 .point-list {
-  min-height: 0;
   margin: 0 -1px;
   padding: 0;
-  overflow-y: auto;
   list-style: none;
+}
+
+/* 三个时段共用一个滚动区，标题和天数标签保持固定。 */
+.slot-scroll {
+  flex: 1;
+  min-height: 0;
+  margin-right: -2px;
+  padding-right: 2px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.slot-scroll .point-list {
+  overflow: visible;
+}
+
+.panel-hint {
+  flex-shrink: 0;
+}
+
+.day-tabs,
+.block-head {
+  flex-shrink: 0;
 }
 
 .point-item {

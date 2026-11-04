@@ -94,7 +94,8 @@ export default function PointPanel({
         </div>
       ) : (
         <>
-          {TIME_SLOTS.map((slot) => {
+          <div className="slot-scroll">
+            {TIME_SLOTS.map((slot) => {
             const slotPoints = activePoints.filter((point) => point.slot === slot);
 
             return (
@@ -217,8 +218,9 @@ export default function PointPanel({
                   </ol>
                 )}
               </div>
-            );
-          })}
+              );
+            })}
+          </div>
           <p className="panel-hint">
             每天独立成一条路线；同一天里按上午 → 下午 → 晚上依次串联。
             拖动地图上的字母图钉可以微调位置。
