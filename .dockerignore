@@ -1,0 +1,11 @@
+node_modules
+dist
+server-dist
+data
+.git
+.gitignore
+docs
+*.png
+*.log
+.env
+.env.local
