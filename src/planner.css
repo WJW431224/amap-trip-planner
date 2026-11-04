@@ -2124,3 +2124,92 @@
 .primary-button:hover {
   background: #f06a05;
 }
+
+/* 设置 / 同步弹窗 */
+.sync-card {
+  width: min(560px, 100%);
+  max-height: min(86vh, 720px);
+  overflow-y: auto;
+}
+
+.sync-block {
+  padding: 10px 0 12px;
+  border-top: 1px solid var(--line);
+}
+
+.sync-block:first-of-type {
+  border-top: 0;
+}
+
+.sync-block h3 {
+  margin: 0 0 6px;
+  color: #37453c;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.sync-block code {
+  padding: 1px 4px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  background: #f2f5f1;
+  border-radius: 4px;
+}
+
+.sync-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+  font-size: 10.5px;
+  color: #7d8981;
+}
+
+.sync-field input {
+  height: 30px;
+  padding: 0 9px;
+  color: #37453c;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  outline: none;
+}
+
+.sync-field input:focus {
+  border-color: rgba(255, 122, 26, 0.5);
+}
+
+.sync-row {
+  display: flex;
+  gap: 10px;
+}
+
+.sync-row .sync-field {
+  flex: 1;
+  min-width: 0;
+}
+
+.sync-buttons {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.sync-buttons .primary-button {
+  flex: 0 0 auto;
+  padding: 0 18px;
+}
+
+.sync-buttons .text-button {
+  white-space: nowrap;
+}
+
+.sync-status {
+  margin: 10px 0 0;
+  color: #9c4d00;
+  font-size: 10.5px;
+  line-height: 1.5;
+}

@@ -11,6 +11,7 @@ import { explainAmapError, type AmapErrorInfo } from '../config/amap';
 import { useCollab } from '../collab/useCollab';
 import CollabModal from '../components/CollabModal';
 import ShareDialog from '../components/ShareDialog';
+import SyncDialog from '../components/SyncDialog';
 import { IS_STATIC_BUILD } from '../config/build';
 import { MapCanvas, type MapCanvasHandle } from '../features/map/MapCanvas';
 import SearchBox, { type PlaceResult } from '../features/search/SearchBox';
@@ -24,7 +25,7 @@ import {
 } from '../features/routes/planner';
 import type { LegPlanResult } from '../features/routes/planner';
 import { createTripState, tripReducer } from '../state/tripReducer';
-import type { TripAction } from '../state/tripReducer';
+import type { TripAction, TripSnapshot } from '../state/tripReducer';
 import { saveTrip } from '../state/persistence';
 import {
   buildShareUrl,
@@ -57,6 +58,8 @@ import {
 
 interface PlannerPageProps {
   credentials: AmapCredentials;
+  /** 仓库里的 trip.json，本机和链接都没有行程时用它兜底。 */
+  bundledTrip?: TripSnapshot | null;
 }
 
 interface SheetHandleProps {
@@ -185,12 +188,12 @@ function resolveAddress(
   });
 }
 
-export default function PlannerPage({ credentials }: PlannerPageProps) {
-  const [state, dispatch] = useReducer(
-    tripReducer,
-    null,
-    () => createTripState(loadInitialTrip()),
-  );
+export default function PlannerPage({ credentials, bundledTrip }: PlannerPageProps) {
+  const [state, dispatch] = useReducer(tripReducer, null, () => {
+    const initial = loadInitialTrip();
+    if (initial.points.length) return createTripState(initial);
+    return createTripState(bundledTrip ?? initial);
+  });
   const [mapReady, setMapReady] = useState(false);
   const [mapError, setMapError] = useState<AmapErrorInfo | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -208,6 +211,7 @@ export default function PlannerPage({ credentials }: PlannerPageProps) {
   const [collabOpen, setCollabOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [shareUrl, setShareUrl] = useState('');
+  const [syncOpen, setSyncOpen] = useState(false);
 
   const collab = useCollab({
     roomId,
@@ -827,9 +831,9 @@ export default function PlannerPage({ credentials }: PlannerPageProps) {
           <button
             type="button"
             className="icon-button"
-            onClick={handleResetKey}
-            aria-label="重新配置 Key"
-            title="重新配置 Key"
+            onClick={() => setSyncOpen(true)}
+            aria-label="设置"
+            title="设置"
           >
             <Settings size={17} />
           </button>
@@ -1053,6 +1057,21 @@ export default function PlannerPage({ credentials }: PlannerPageProps) {
           </div>
         ) : null}
       </main>
+
+      <SyncDialog
+        open={syncOpen}
+        snapshot={{ points: state.points, mode: state.mode, city: state.city }}
+        onClose={() => setSyncOpen(false)}
+        onLoaded={(trip) => {
+          dispatch({ type: 'HYDRATE', snapshot: trip });
+          setActiveDay(Math.max(1, ...trip.points.map((point) => point.day)));
+          notify('已从仓库读回行程');
+        }}
+        onResetKey={() => {
+          setSyncOpen(false);
+          handleResetKey();
+        }}
+      />
 
       <ShareDialog
         open={shareOpen}

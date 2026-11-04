@@ -5,16 +5,23 @@ import {
   resolveCredentialsAsync,
   type AmapCredentials,
 } from './config/credentials';
+import { fetchBundledTrip } from './state/cloud';
+import type { TripSnapshot } from './state/tripReducer';
 
 export default function App() {
   // undefined = 还在读取配置，null = 没配置，需要引导页。
   const [credentials, setCredentials] = useState<AmapCredentials | null | undefined>(undefined);
+  const [bundledTrip, setBundledTrip] = useState<TripSnapshot | null>(null);
 
   useEffect(() => {
     let alive = true;
-    void resolveCredentialsAsync().then((value) => {
-      if (alive) setCredentials(value);
-    });
+    void Promise.all([resolveCredentialsAsync(), fetchBundledTrip()]).then(
+      ([credentialValue, trip]) => {
+        if (!alive) return;
+        setCredentials(credentialValue);
+        setBundledTrip(trip);
+      },
+    );
     return () => {
       alive = false;
     };
@@ -37,5 +44,5 @@ export default function App() {
     return <SetupPage />;
   }
 
-  return <PlannerPage credentials={credentials} />;
+  return <PlannerPage credentials={credentials} bundledTrip={bundledTrip} />;
 }
