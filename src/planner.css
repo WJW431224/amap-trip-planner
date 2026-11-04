@@ -2008,3 +2008,26 @@
   color: #9c4d00;
   background: #fff1e0;
 }
+
+/* 路线面板里，每个时段单独一组 */
+.slot-route {
+  padding: 2px 0 6px;
+}
+
+.slot-route-head {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 6px 2px 5px;
+  color: #4c5a51;
+  font-size: 10px;
+}
+
+.slot-route-head strong {
+  font-weight: 600;
+}
+
+.slot-route-head > span:last-child {
+  color: #9aa59d;
+  font-size: 9px;
+}

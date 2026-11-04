@@ -1,5 +1,5 @@
 import type { Leg, TravelMode, TripPoint } from '../../types';
-import { MODE_LABELS } from '../../types';
+import { MODE_LABELS, SLOT_LABELS, TIME_SLOTS } from '../../types';
 import {
   formatDistance,
   formatDuration,
@@ -175,7 +175,7 @@ export default function RoutePanel({
 
           {!legs.length && points.length >= 2 ? (
             <p className="route-day-hint">
-              每天至少两个点才能串成路线。当前天数之间不会互相连接。
+              每个时段至少两个点才能串成路线：上午、下午、晚上各自独立，天数之间也不会相连。
             </p>
           ) : null}
 
@@ -183,9 +183,7 @@ export default function RoutePanel({
             {dayNumbers.map((day) => {
               const dayPoints = points.filter((point) => point.day === day);
               const dayLegs = legs.filter((leg) => leg.day === day);
-              const daySuccess = dayLegs.filter(
-                (leg) => leg.status === 'success',
-              );
+              const daySuccess = dayLegs.filter((leg) => leg.status === 'success');
               const dayDistance = daySuccess.reduce(
                 (sum, leg) => sum + (leg.distance ?? 0),
                 0,
@@ -214,56 +212,87 @@ export default function RoutePanel({
                     </span>
                   </div>
 
-                  {dayLegs.length === 0 ? (
-                    <p className="day-group-empty">
-                      当天只有一个点，再标一个就能规划。
-                    </p>
-                  ) : (
-                    <ol className="leg-list">
-                      {dayLegs.map((leg) => {
-                        const { from, to, fromName, toName } = legLabel(leg);
-                        const active = leg.id === selectedLeg?.id;
-                        const actualMode = leg.actualMode ?? leg.mode;
+                  {TIME_SLOTS.map((slot) => {
+                    const slotPoints = dayPoints.filter((point) => point.slot === slot);
+                    const slotLegs = dayLegs.filter((leg) => (leg.slot ?? 'am') === slot);
+                    if (!slotPoints.length && !slotLegs.length) return null;
 
-                        return (
-                          <li key={leg.id}>
-                            <button
-                              type="button"
-                              className={`leg-item ${active ? 'active' : ''} ${leg.status}`}
-                              onClick={() => onSelectLeg(leg.id)}
-                            >
-                              <span className="leg-index">
-                                {from}
-                                <span>→</span>
-                                {to}
-                              </span>
-                              <span className="leg-main">
-                                <strong>
-                                  {fromName} → {toName}
-                                </strong>
-                                <small>
-                                  {leg.status === 'loading'
-                                    ? '正在规划…'
-                                    : leg.status === 'error'
-                                      ? leg.error || '这段没规划出来'
-                                      : `${MODE_LABELS[actualMode]} · ${formatDistance(leg.distance)}${
-                                          leg.estimated ? ' · 估算' : ''
-                                        }`}
-                                </small>
-                              </span>
-                              <span className="leg-metric">
-                                {leg.status === 'success'
-                                  ? formatDuration(leg.duration)
-                                  : leg.status === 'loading'
-                                    ? '···'
-                                    : '!'}
-                              </span>
-                            </button>
-                          </li>
-                        );
-                      })}
-                    </ol>
-                  )}
+                    const slotSuccess = slotLegs.filter((leg) => leg.status === 'success');
+                    const slotDistance = slotSuccess.reduce(
+                      (sum, leg) => sum + (leg.distance ?? 0),
+                      0,
+                    );
+                    const slotDuration = slotSuccess.reduce(
+                      (sum, leg) => sum + (leg.duration ?? 0),
+                      0,
+                    );
+
+                    return (
+                      <div className="slot-route" key={slot}>
+                        <div className="slot-route-head">
+                          <span className={`slot-dot ${slot}`} aria-hidden="true" />
+                          <strong>{SLOT_LABELS[slot]}</strong>
+                          <span>
+                            {slotPoints.length} 个点
+                            {slotLegs.length
+                              ? ` · ${slotLegs.length} 段 · ${formatDistance(slotDistance)} · ${formatDuration(slotDuration)}`
+                              : ''}
+                          </span>
+                        </div>
+
+                        {slotLegs.length === 0 ? (
+                          <p className="day-group-empty">
+                            这个时段只有一个点，再加一个就能单独成线。
+                          </p>
+                        ) : (
+                          <ol className="leg-list">
+                            {slotLegs.map((leg) => {
+                              const { from, to, fromName, toName } = legLabel(leg);
+                              const active = leg.id === selectedLeg?.id;
+                              const actualMode = leg.actualMode ?? leg.mode;
+
+                              return (
+                                <li key={leg.id}>
+                                  <button
+                                    type="button"
+                                    className={`leg-item ${active ? 'active' : ''} ${leg.status}`}
+                                    onClick={() => onSelectLeg(leg.id)}
+                                  >
+                                    <span className="leg-index">
+                                      {from}
+                                      <span>→</span>
+                                      {to}
+                                    </span>
+                                    <span className="leg-main">
+                                      <strong>
+                                        {fromName} → {toName}
+                                      </strong>
+                                      <small>
+                                        {leg.status === 'loading'
+                                          ? '正在规划…'
+                                          : leg.status === 'error'
+                                            ? leg.error || '这段没规划出来'
+                                            : `${MODE_LABELS[actualMode]} · ${formatDistance(leg.distance)}${
+                                                leg.estimated ? ' · 估算' : ''
+                                              }`}
+                                      </small>
+                                    </span>
+                                    <span className="leg-metric">
+                                      {leg.status === 'success'
+                                        ? formatDuration(leg.duration)
+                                        : leg.status === 'loading'
+                                          ? '···'
+                                          : '!'}
+                                    </span>
+                                  </button>
+                                </li>
+                              );
+                            })}
+                          </ol>
+                        )}
+                      </div>
+                    );
+                  })}
                 </section>
               );
             })}

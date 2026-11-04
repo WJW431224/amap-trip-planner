@@ -46,6 +46,7 @@ export interface Leg {
   fromId: string;
   toId: string;
   day: number;
+  slot: TimeSlot;
   mode: TravelMode;
   actualMode?: TravelMode;
   status: LegStatus;

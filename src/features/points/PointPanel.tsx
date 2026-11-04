@@ -117,14 +117,17 @@ export default function PointPanel({
                   <ol className="point-list">
                     {slotPoints.map((point) => {
                       const index = orderIndex.get(point.id) ?? 0;
-                      const isFirst = index === 0;
-                      const isLast = index === activePoints.length - 1;
+                      const slotIndex = slotPoints.findIndex(
+                        (item) => item.id === point.id,
+                      );
+                      const isFirst = slotIndex === 0;
+                      const isLast = slotIndex === slotPoints.length - 1;
                       const kind = isFirst ? 'start' : isLast ? 'end' : 'mid';
                       const label = isFirst
                         ? '起点'
                         : isLast
                           ? '终点'
-                          : `途经 ${index}`;
+                          : `途经 ${slotIndex}`;
 
                       return (
                         <li className="point-item" key={point.id}>
@@ -239,7 +242,7 @@ export default function PointPanel({
             })}
           </div>
           <p className="panel-hint">
-            每天独立成一条路线；同一天里按上午 → 下午 → 晚上依次串联。
+            上午、下午、晚上各自成一条路线，各自有起点和终点，不会跨时段相连。
             拖动地图上的字母图钉可以微调位置。
           </p>
         </>

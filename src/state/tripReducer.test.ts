@@ -32,6 +32,7 @@ function stubLeg(id: string, fromId: string, toId: string): Leg {
     fromId,
     toId,
     day: 1,
+    slot: 'am',
     mode: 'driving',
     status: 'loading',
     path: [],

@@ -116,6 +116,7 @@ function PanelHandle({ side, label, onCollapse }: PanelHandleProps) {
 interface LegPair {
   id: string;
   day: number;
+  slot: TimeSlot;
   from: { id: string; coord: LngLat };
   to: { id: string; coord: LngLat };
 }
@@ -427,7 +428,7 @@ export default function PlannerPage({ credentials }: PlannerPageProps) {
   const pointsKey = state.points
     .map(
       (point) =>
-        `${point.id}:${point.day}:${point.coord.lng.toFixed(6)},${point.coord.lat.toFixed(6)}`,
+        `${point.id}:${point.day}:${point.slot}:${point.coord.lng.toFixed(6)},${point.coord.lat.toFixed(6)}`,
     )
     .join('|');
 
@@ -437,6 +438,7 @@ export default function PlannerPage({ credentials }: PlannerPageProps) {
         id: point.id,
         coord: point.coord,
         day: point.day,
+        slot: point.slot,
       })),
     // pointsKey 已覆盖 id、天数和坐标变化，名称更新不应触发重新规划。
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -473,26 +475,27 @@ export default function PlannerPage({ credentials }: PlannerPageProps) {
       return;
     }
 
-    const byDay = new Map<
-      number,
-      Array<{ id: string; coord: LngLat; day: number }>
+    // 上午 / 下午 / 晚上各自成段路线，互不相连：每个时段有自己的起止点。
+    const bySlot = new Map<
+      string,
+      Array<{ id: string; coord: LngLat; day: number; slot: TimeSlot }>
     >();
     for (const point of routePoints) {
-      const list = byDay.get(point.day) ?? [];
+      const key = `${point.day}-${point.slot}`;
+      const list = bySlot.get(key) ?? [];
       list.push(point);
-      byDay.set(point.day, list);
+      bySlot.set(key, list);
     }
 
     const pairs: LegPair[] = [];
-    for (const [day, dayPoints] of [...byDay.entries()].sort(
-      (a, b) => a[0] - b[0],
-    )) {
-      for (let index = 0; index < dayPoints.length - 1; index += 1) {
-        const from = dayPoints[index];
-        const to = dayPoints[index + 1];
+    for (const [key, slotPoints] of bySlot.entries()) {
+      for (let index = 0; index < slotPoints.length - 1; index += 1) {
+        const from = slotPoints[index];
+        const to = slotPoints[index + 1];
         pairs.push({
-          id: `${day}-${from.id}__${to.id}`,
-          day,
+          id: `${key}-${from.id}__${to.id}`,
+          day: from.day,
+          slot: from.slot,
           from,
           to,
         });
@@ -510,6 +513,7 @@ export default function PlannerPage({ credentials }: PlannerPageProps) {
       fromId: pair.from.id,
       toId: pair.to.id,
       day: pair.day,
+      slot: pair.slot,
       mode: state.mode,
       status: 'loading',
       path: [],
