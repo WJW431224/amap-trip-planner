@@ -2031,3 +2031,96 @@
   color: #9aa59d;
   font-size: 9px;
 }
+
+/* 分享链接弹窗 */
+.share-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(16, 35, 28, 0.32);
+  backdrop-filter: blur(2px);
+}
+
+.share-card {
+  width: min(520px, 100%);
+  padding: 16px 16px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fffdf9;
+  box-shadow: 0 24px 60px rgba(16, 35, 28, 0.24);
+}
+
+.share-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.share-head strong {
+  font-size: 13px;
+}
+
+.share-tip {
+  margin: 0 0 10px;
+  color: #7d8981;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.share-url {
+  width: 100%;
+  padding: 9px 10px;
+  color: #4c5a51;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  line-height: 1.5;
+  word-break: break-all;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #fff;
+  resize: none;
+}
+
+.share-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.share-meta {
+  color: #a0aaa3;
+  font-size: 10px;
+}
+
+.share-buttons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.share-buttons a,
+.share-buttons button {
+  white-space: nowrap;
+}
+
+.primary-button {
+  height: 30px;
+  padding: 0 14px;
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 600;
+  border: 0;
+  border-radius: 9px;
+  background: var(--orange);
+}
+
+.primary-button:hover {
+  background: #f06a05;
+}

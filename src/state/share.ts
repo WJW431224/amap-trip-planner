@@ -62,8 +62,13 @@ export function encodeTrip(snapshot: TripSnapshot): string {
   return toBase64Url(JSON.stringify(payload));
 }
 
+// 用查询参数而不是 # 片段：有些聊天软件转发时会把 # 后面的内容丢掉。
 export function buildShareUrl(snapshot: TripSnapshot): string {
-  return `${window.location.origin}${window.location.pathname}#trip=${encodeTrip(snapshot)}`;
+  return `${window.location.origin}${window.location.pathname}?trip=${encodeTrip(snapshot)}`;
+}
+
+export function buildTripUrl(snapshot: TripSnapshot): string {
+  return `?trip=${encodeTrip(snapshot)}${window.location.hash && !window.location.hash.startsWith('#trip=') ? window.location.hash : ''}`;
 }
 
 function decodeSharedTrip(value: string): TripSnapshot | null {
@@ -118,11 +123,27 @@ function decodeSharedTrip(value: string): TripSnapshot | null {
 }
 
 export function consumeShareFromUrl(): TripSnapshot | null {
+  const fromQuery = new URLSearchParams(window.location.search).get('trip');
+  if (fromQuery) {
+    const trip = decodeSharedTrip(fromQuery);
+    if (trip) return trip;
+  }
+
+  // 兼容旧链接：#trip=...
   const hash = window.location.hash;
   if (!hash.startsWith('#trip=')) return null;
 
   const encoded = hash.slice('#trip='.length);
   return decodeSharedTrip(encoded);
+}
+
+/** 从地址里去掉 trip 参数，其余参数保留。 */
+export function clearTripParam(): void {
+  const url = new URL(window.location.href);
+  if (!url.searchParams.has('trip') && !url.hash.startsWith('#trip=')) return;
+  url.searchParams.delete('trip');
+  url.hash = url.hash.startsWith('#trip=') ? '' : url.hash;
+  window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
 }
 
 export function clearShareHash(): void {

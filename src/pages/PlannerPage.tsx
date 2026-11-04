@@ -10,6 +10,7 @@ import { clearStoredCredentials } from '../config/credentials';
 import { explainAmapError, type AmapErrorInfo } from '../config/amap';
 import { useCollab } from '../collab/useCollab';
 import CollabModal from '../components/CollabModal';
+import ShareDialog from '../components/ShareDialog';
 import { IS_STATIC_BUILD } from '../config/build';
 import { MapCanvas, type MapCanvasHandle } from '../features/map/MapCanvas';
 import SearchBox, { type PlaceResult } from '../features/search/SearchBox';
@@ -27,8 +28,9 @@ import type { TripAction } from '../state/tripReducer';
 import { saveTrip } from '../state/persistence';
 import {
   buildShareUrl,
+  buildTripUrl,
   clearShareHash,
-  encodeTrip,
+  clearTripParam,
   loadInitialTrip,
 } from '../state/share';
 import {
@@ -204,6 +206,8 @@ export default function PlannerPage({ credentials }: PlannerPageProps) {
   );
   const [roomId, setRoomId] = useState<string | null>(IS_STATIC_BUILD ? null : readRoomId);
   const [collabOpen, setCollabOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareUrl, setShareUrl] = useState('');
 
   const collab = useCollab({
     roomId,
@@ -708,32 +712,26 @@ export default function PlannerPage({ credentials }: PlannerPageProps) {
     window.open(url, '_blank', 'noopener,noreferrer');
   }
 
-  // 地址栏始终带着当前行程：#trip=... 一直同步。
-  // 这样把地址复制给别人，对方打开也能看到同一份行程（数据存本地是看不见的）。
+  // 地址栏始终带着当前行程（?trip=...）。
+  // 数据本来只存在本机浏览器里，把参数带上，别人才看得到同一份行程。
   useEffect(() => {
     const timer = window.setTimeout(() => {
       if (!state.points.length) {
-        if (window.location.hash.startsWith('#trip=')) {
-          window.history.replaceState(
-            null,
-            '',
-            `${window.location.pathname}${window.location.search}`,
-          );
-        }
+        clearTripParam();
         return;
       }
 
-      const encoded = encodeTrip({
+      const next = buildTripUrl({
         points: state.points,
         mode: state.mode,
         city: state.city,
       });
-      const next = `#trip=${encoded}`;
-      if (window.location.hash !== next) {
+      const current = `${window.location.search}${window.location.hash}`;
+      if (current !== next) {
         window.history.replaceState(
           null,
           '',
-          `${window.location.pathname}${window.location.search}${next}`,
+          `${window.location.pathname}${next}`,
         );
       }
     }, 500);
@@ -741,24 +739,20 @@ export default function PlannerPage({ credentials }: PlannerPageProps) {
     return () => window.clearTimeout(timer);
   }, [state.points, state.mode, state.city]);
 
-  async function handleShare() {
+  function handleShare() {
     if (!state.points.length) {
       notify('先标一个点再分享');
       return;
     }
 
-    const url = buildShareUrl({
-      points: state.points,
-      mode: state.mode,
-      city: state.city,
-    });
-
-    try {
-      await navigator.clipboard.writeText(url);
-      notify('分享链接已复制');
-    } catch {
-      window.prompt('复制这个分享链接', url);
-    }
+    setShareUrl(
+      buildShareUrl({
+        points: state.points,
+        mode: state.mode,
+        city: state.city,
+      }),
+    );
+    setShareOpen(true);
   }
 
   function handleResetKey() {
@@ -1059,6 +1053,12 @@ export default function PlannerPage({ credentials }: PlannerPageProps) {
           </div>
         ) : null}
       </main>
+
+      <ShareDialog
+        open={shareOpen}
+        url={shareUrl}
+        onClose={() => setShareOpen(false)}
+      />
 
       {IS_STATIC_BUILD ? null : (
       <CollabModal
