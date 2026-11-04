@@ -25,7 +25,12 @@ import type { LegPlanResult } from '../features/routes/planner';
 import { createTripState, tripReducer } from '../state/tripReducer';
 import type { TripAction } from '../state/tripReducer';
 import { saveTrip } from '../state/persistence';
-import { buildShareUrl, clearShareHash, loadInitialTrip } from '../state/share';
+import {
+  buildShareUrl,
+  clearShareHash,
+  encodeTrip,
+  loadInitialTrip,
+} from '../state/share';
 import {
   MAX_DAYS,
   MAX_POINTS,
@@ -702,6 +707,39 @@ export default function PlannerPage({ credentials }: PlannerPageProps) {
     const url = `https://uri.amap.com/navigation?from=${fromParam}&to=${toParam}&mode=${URI_MODE[leg.actualMode ?? leg.mode]}&policy=1&src=amap-trip-planner&coordinate=gaode&callnative=0`;
     window.open(url, '_blank', 'noopener,noreferrer');
   }
+
+  // 地址栏始终带着当前行程：#trip=... 一直同步。
+  // 这样把地址复制给别人，对方打开也能看到同一份行程（数据存本地是看不见的）。
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      if (!state.points.length) {
+        if (window.location.hash.startsWith('#trip=')) {
+          window.history.replaceState(
+            null,
+            '',
+            `${window.location.pathname}${window.location.search}`,
+          );
+        }
+        return;
+      }
+
+      const encoded = encodeTrip({
+        points: state.points,
+        mode: state.mode,
+        city: state.city,
+      });
+      const next = `#trip=${encoded}`;
+      if (window.location.hash !== next) {
+        window.history.replaceState(
+          null,
+          '',
+          `${window.location.pathname}${window.location.search}${next}`,
+        );
+      }
+    }, 500);
+
+    return () => window.clearTimeout(timer);
+  }, [state.points, state.mode, state.city]);
 
   async function handleShare() {
     if (!state.points.length) {
