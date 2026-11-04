@@ -205,6 +205,18 @@ async function serveStatic(req: IncomingMessage, res: ServerResponse): Promise<v
     return;
   }
 
+  // 服务器端统一配置高德 Key：部署时设好环境变量，访客打开网页就能用。
+  if (url.pathname === '/api/config') {
+    const key = (process.env.AMAP_KEY ?? '').trim();
+    const securityCode = (process.env.AMAP_SECURITY_CODE ?? '').trim();
+    res.writeHead(200, {
+      'content-type': 'application/json; charset=utf-8',
+      'cache-control': 'no-store',
+    });
+    res.end(JSON.stringify({ key, securityCode }));
+    return;
+  }
+
   const requested = decodeURIComponent(url.pathname);
   const normalized = path.normalize(requested).replace(/^(\.\.[/\\])+/, '');
   let filePath = path.join(DIST_DIR, normalized);

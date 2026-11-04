@@ -712,6 +712,10 @@ export default function PlannerPage({ credentials }: PlannerPageProps) {
       notify('当前 Key 来自 .env.local，请修改文件后重启开发服务器');
       return;
     }
+    if (credentials.source === 'server') {
+      notify('当前用的是服务器统一配置的 Key，无需自己填写');
+      return;
+    }
     if (!window.confirm('清除本机保存的 Key 配置，回到配置页？')) return;
     clearStoredCredentials();
     window.location.reload();

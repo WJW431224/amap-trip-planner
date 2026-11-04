@@ -1,4 +1,4 @@
-export type CredentialSource = 'env' | 'local';
+export type CredentialSource = 'env' | 'server' | 'local';
 
 export interface AmapCredentials {
   key: string;
@@ -43,6 +43,37 @@ export function resolveCredentials(): AmapCredentials | null {
 
   const stored = readStoredCredentials();
   if (stored) return { ...stored, source: 'local' };
+
+  return null;
+}
+
+/**
+ * 部署在服务器上时，Key 放在服务器环境变量里，由 /api/config 下发，
+ * 这样别人打开链接就能直接用，不用自己申请 Key。
+ */
+export async function fetchServerCredentials(): Promise<CredentialInput | null> {
+  try {
+    const response = await fetch('/api/config', { cache: 'no-store' });
+    if (!response.ok) return null;
+
+    const data = (await response.json()) as { key?: unknown; securityCode?: unknown };
+    const key = clean(data.key);
+    const securityCode = clean(data.securityCode);
+    return key && securityCode ? { key, securityCode } : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function resolveCredentialsAsync(): Promise<AmapCredentials | null> {
+  const envCredentials = readEnvCredentials();
+  if (envCredentials) return { ...envCredentials, source: 'env' };
+
+  const stored = readStoredCredentials();
+  if (stored) return { ...stored, source: 'local' };
+
+  const server = await fetchServerCredentials();
+  if (server) return { ...server, source: 'server' };
 
   return null;
 }
