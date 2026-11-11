@@ -2209,8 +2209,17 @@
 }
 
 .sync-row .sync-field {
-  flex: 1;
+  flex: 1 1 0;
   min-width: 0;
+}
+
+.sync-row .sync-field input {
+  width: 100%;
+  min-width: 0;
+}
+
+.sync-card {
+  overflow-x: hidden;
 }
 
 .sync-buttons {
