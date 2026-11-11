@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import type { TimeSlot, TripPoint } from '../../types';
 import { SLOT_LABELS, TIME_SLOTS } from '../../types';
 import { pointLetter, shortName } from '../../lib/format';
@@ -18,6 +19,7 @@ interface PointPanelProps {
   onAddDay: () => void;
   onPointDayChange: (id: string, day: number) => void;
   onPointSlotChange: (id: string, slot: TimeSlot) => void;
+  onReorderDays: (from: number, to: number) => void;
   onRename: (id: string, name: string) => void;
   city: string;
   onMove: (id: string, direction: -1 | 1) => void;
@@ -34,6 +36,7 @@ export default function PointPanel({
   onAddDay,
   onPointDayChange,
   onPointSlotChange,
+  onReorderDays,
   onRename,
   city,
   onMove,
@@ -43,6 +46,63 @@ export default function PointPanel({
 }: PointPanelProps) {
   const activePoints = points.filter((point) => point.day === activeDay);
   const orderIndex = new Map(activePoints.map((point, index) => [point.id, index]));
+
+  // 长按天数标签就能拖动排序（手机、电脑都能用）。
+  const [dragDay, setDragDay] = useState<number | null>(null);
+  const [overDay, setOverDay] = useState<number | null>(null);
+  const pressTimer = useRef<number | null>(null);
+  const draggedRef = useRef(false);
+
+  useEffect(() => {
+    if (dragDay === null) return;
+
+    const handleMove = (event: PointerEvent) => {
+      const element = document.elementFromPoint(event.clientX, event.clientY);
+      const target = element?.closest('[data-day]') as HTMLElement | null;
+      const value = Number(target?.dataset.day);
+      if (Number.isInteger(value) && value > 0) setOverDay(value);
+    };
+
+    const handleUp = () => {
+      setOverDay((current) => {
+        if (current !== null && current !== dragDay) {
+          onReorderDays(dragDay, current);
+        }
+        return null;
+      });
+      setDragDay(null);
+      draggedRef.current = true;
+      window.setTimeout(() => {
+        draggedRef.current = false;
+      }, 0);
+    };
+
+    window.addEventListener('pointermove', handleMove);
+    window.addEventListener('pointerup', handleUp);
+    window.addEventListener('pointercancel', handleUp);
+    return () => {
+      window.removeEventListener('pointermove', handleMove);
+      window.removeEventListener('pointerup', handleUp);
+      window.removeEventListener('pointercancel', handleUp);
+    };
+  }, [dragDay, onReorderDays]);
+
+  function startPress(day: number, event: React.PointerEvent) {
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    if (pressTimer.current) window.clearTimeout(pressTimer.current);
+    pressTimer.current = window.setTimeout(() => {
+      pressTimer.current = null;
+      setDragDay(day);
+      setOverDay(day);
+    }, 260);
+  }
+
+  function cancelPress() {
+    if (pressTimer.current) {
+      window.clearTimeout(pressTimer.current);
+      pressTimer.current = null;
+    }
+  }
 
   return (
     <section className="points-block">
@@ -64,17 +124,32 @@ export default function PointPanel({
         ) : null}
       </div>
 
-      <div className="day-tabs" role="tablist" aria-label="行程天数">
+      <div
+        className={`day-tabs ${dragDay !== null ? 'dragging' : ''}`}
+        role="tablist"
+        aria-label="行程天数"
+      >
         {days.map((day) => {
           const count = points.filter((point) => point.day === day).length;
+          const isDragging = dragDay === day;
+          const isOver = dragDay !== null && overDay === day && day !== dragDay;
           return (
             <button
               key={day}
               type="button"
               role="tab"
+              data-day={day}
               aria-selected={activeDay === day}
-              className={`day-tab ${activeDay === day ? 'active' : ''}`}
-              onClick={() => onDayChange(day)}
+              className={`day-tab ${activeDay === day ? 'active' : ''} ${
+                isDragging ? 'dragging' : ''
+              } ${isOver ? 'drop-target' : ''}`}
+              onPointerDown={(event) => startPress(day, event)}
+              onPointerUp={cancelPress}
+              onPointerLeave={cancelPress}
+              onClick={() => {
+                if (draggedRef.current) return;
+                onDayChange(day);
+              }}
             >
               第 {day} 天
               <span>{count}</span>
@@ -242,7 +317,8 @@ export default function PointPanel({
             })}
           </div>
           <p className="panel-hint">
-            上午、下午、晚上各自成一条路线，各自有起点和终点，不会跨时段相连。
+            上午、下午、晚上各自成一条路线，各自有起点和终点，不会跨时段相连；
+            长按上面的天数标签可以拖动排序。
             拖动地图上的字母图钉可以微调位置。
           </p>
         </>

@@ -434,6 +434,13 @@ export default function PlannerPage({ credentials, bundledTrip }: PlannerPagePro
     applyUserAction({ type: 'SET_POINT_SLOT', id, slot });
   }
 
+  function handleReorderDays(from: number, to: number) {
+    if (from === to) return;
+    if (!applyUserAction({ type: 'REORDER_DAYS', from, to })) return;
+    setActiveDay(to);
+    notify(`第 ${from} 天已挪到第 ${to} 天`);
+  }
+
   function handlePointRename(id: string, name: string) {
     applyUserAction({ type: 'UPDATE_POINT', id, patch: { name } });
   }
@@ -906,6 +913,7 @@ export default function PlannerPage({ credentials, bundledTrip }: PlannerPagePro
             onAddDay={handleAddDay}
             onPointDayChange={handlePointDayChange}
             onPointSlotChange={handlePointSlotChange}
+            onReorderDays={handleReorderDays}
             onRename={handlePointRename}
             city={state.city}
             onMove={(id, direction) => {

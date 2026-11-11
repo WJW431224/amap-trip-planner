@@ -37,6 +37,7 @@ export type TripAction =
   | { type: 'MOVE_POINT'; id: string; direction: -1 | 1 }
   | { type: 'SET_POINT_DAY'; id: string; day: number }
   | { type: 'SET_POINT_SLOT'; id: string; slot: TimeSlot }
+  | { type: 'REORDER_DAYS'; from: number; to: number }
   | { type: 'CLEAR_POINTS' }
   | { type: 'SET_MODE'; mode: TravelMode }
   | { type: 'SET_CITY'; city: string }
@@ -161,6 +162,29 @@ export function tripReducer(state: TripState, action: TripAction): TripState {
         moved,
         ...rest.slice(insertAt),
       ];
+
+      return { ...state, points, ...EMPTY_ROUTE };
+    }
+
+    case 'REORDER_DAYS': {
+      const { from, to } = action;
+      if (from === to || from < 1 || to < 1) return state;
+
+      const total = Math.max(from, to, ...state.points.map((point) => point.day));
+      const order = Array.from({ length: total }, (_, index) => index + 1);
+      const [moved] = order.splice(from - 1, 1);
+      if (moved === undefined) return state;
+      order.splice(to - 1, 0, moved);
+
+      const dayMap = new Map<number, number>();
+      order.forEach((oldDay, index) => dayMap.set(oldDay, index + 1));
+
+      // 天里的点跟着走：只改 day，再按「天 → 时段」重新排一遍。
+      const points = state.points
+        .map((point) => ({ ...point, day: dayMap.get(point.day) ?? point.day }))
+        .sort(
+          (a, b) => a.day - b.day || slotRank(a.slot) - slotRank(b.slot),
+        );
 
       return { ...state, points, ...EMPTY_ROUTE };
     }

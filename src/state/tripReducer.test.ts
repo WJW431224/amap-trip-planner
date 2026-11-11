@@ -215,4 +215,27 @@ describe('tripReducer', () => {
     });
     expect(selected.selectedLegId).toBe('a__b');
   });
+
+  it('拖动调整天数顺序时，天里的点跟着走', () => {
+    let state = tripReducer(base, {
+      type: 'ADD_POINT',
+      point: point('a', 'A', 120, 30, 1),
+    });
+    state = tripReducer(state, {
+      type: 'ADD_POINT',
+      point: point('b', 'B', 121, 31, 2),
+    });
+    state = tripReducer(state, {
+      type: 'ADD_POINT',
+      point: point('c', 'C', 122, 32, 3),
+    });
+
+    state = tripReducer(state, { type: 'REORDER_DAYS', from: 3, to: 1 });
+
+    expect(state.points.map((item) => [item.id, item.day])).toEqual([
+      ['c', 1],
+      ['a', 2],
+      ['b', 3],
+    ]);
+  });
 });

@@ -621,6 +621,28 @@
   color: #c26a17;
 }
 
+/* 长按拖动排序天数 */
+.day-tabs.dragging {
+  touch-action: none;
+}
+
+.day-tab {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.day-tab.dragging {
+  opacity: 0.75;
+  transform: scale(0.96);
+  box-shadow: 0 6px 16px rgba(16, 35, 28, 0.18);
+}
+
+.day-tab.drop-target {
+  color: #9c4d00;
+  border-color: rgba(255, 122, 26, 0.6);
+  background: #fff1e0;
+}
+
 .day-add {
   flex-shrink: 0;
   height: 26px;
