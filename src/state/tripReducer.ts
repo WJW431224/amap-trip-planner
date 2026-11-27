@@ -35,6 +35,7 @@ export type TripAction =
     }
   | { type: 'REMOVE_POINT'; id: string }
   | { type: 'MOVE_POINT'; id: string; direction: -1 | 1 }
+  | { type: 'REORDER_POINT'; id: string; beforeId: string | null }
   | { type: 'SET_POINT_DAY'; id: string; day: number }
   | { type: 'SET_POINT_SLOT'; id: string; slot: TimeSlot }
   | { type: 'REORDER_DAYS'; from: number; to: number }
@@ -129,6 +130,39 @@ export function tripReducer(state: TripState, action: TripAction): TripState {
 
       const points = [...state.points];
       [points[index], points[nextIndex]] = [points[nextIndex], points[index]];
+      return { ...state, points, ...EMPTY_ROUTE };
+    }
+
+    case 'REORDER_POINT': {
+      const point = state.points.find((item) => item.id === action.id);
+      if (!point) return state;
+      if (action.beforeId === action.id) return state;
+
+      // 只允许在同一天、同一时段内拖动；beforeId 为 null 表示放到组尾。
+      const target = action.beforeId
+        ? state.points.find((item) => item.id === action.beforeId)
+        : null;
+      if (action.beforeId && !target) return state;
+      if (target && (target.day !== point.day || target.slot !== point.slot)) {
+        return state;
+      }
+
+      const rest = state.points.filter((item) => item.id !== action.id);
+      const insertAt = target
+        ? rest.findIndex((item) => item.id === target.id)
+        : insertIndexFor(rest, point.day, point.slot);
+      if (insertAt < 0) return state;
+
+      const points = [
+        ...rest.slice(0, insertAt),
+        point,
+        ...rest.slice(insertAt),
+      ];
+      const unchanged = points.every(
+        (item, index) => item.id === state.points[index]?.id,
+      );
+      if (unchanged) return state;
+
       return { ...state, points, ...EMPTY_ROUTE };
     }
 

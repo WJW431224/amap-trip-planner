@@ -57,7 +57,7 @@ import {
   type TripPoint,
   type TimeSlot,
 } from '../types';
-import { makeId, pointLetter } from '../lib/format';
+import { makeId, pointLetter, shortName } from '../lib/format';
 import {
   ChevronDown,
   ChevronLeft,
@@ -76,15 +76,29 @@ interface PlannerPageProps {
   bundledTrip?: CloudTrip | null;
 }
 
+type SheetState = 'expanded' | 'half' | 'collapsed';
+
+const NEXT_SHEET_STATE: Record<SheetState, SheetState> = {
+  expanded: 'half',
+  half: 'collapsed',
+  collapsed: 'expanded',
+};
+
+const SHEET_TOGGLE_LABEL: Record<SheetState, string> = {
+  expanded: '半屏',
+  half: '收起',
+  collapsed: '展开',
+};
+
 interface SheetHandleProps {
-  collapsed: boolean;
+  sheet: SheetState;
   title: string;
   summary: string;
   onToggle: () => void;
 }
 
 function SheetHandle({
-  collapsed,
+  sheet,
   title,
   summary,
   onToggle,
@@ -94,16 +108,16 @@ function SheetHandle({
       type="button"
       className="sheet-handle"
       onClick={onToggle}
-      aria-expanded={!collapsed}
-      aria-label={collapsed ? '展开底部面板' : '收起底部面板'}
+      aria-expanded={sheet !== 'collapsed'}
+      aria-label={`${SHEET_TOGGLE_LABEL[sheet]}底部面板`}
     >
       <span className="sheet-grabber" aria-hidden="true" />
       <span className="sheet-handle-row">
         <strong>{title}</strong>
         <small>{summary}</small>
         <span className="sheet-toggle">
-          {collapsed ? '展开' : '收起'}
-          {collapsed ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          {SHEET_TOGGLE_LABEL[sheet]}
+          {sheet === 'collapsed' ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
         </span>
       </span>
     </button>
@@ -212,9 +226,11 @@ export default function PlannerPage({ credentials, bundledTrip }: PlannerPagePro
   const [mapReady, setMapReady] = useState(false);
   const [mapError, setMapError] = useState<AmapErrorInfo | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [toastUndo, setToastUndo] = useState<(() => void) | null>(null);
+  const [pendingPoint, setPendingPoint] = useState<LngLat | null>(null);
   const [mobileTab, setMobileTab] = useState<'points' | 'route'>('points');
-  const [sheetCollapsed, setSheetCollapsed] = useState(
-    () => window.innerWidth <= 900 && state.points.length > 0,
+  const [sheetState, setSheetState] = useState<SheetState>(() =>
+    window.innerWidth <= 900 && state.points.length > 0 ? 'collapsed' : 'expanded',
   );
   const [leftCollapsed, setLeftCollapsed] = useState(false);
   const [rightCollapsed, setRightCollapsed] = useState(false);
@@ -302,10 +318,14 @@ export default function PlannerPage({ credentials, bundledTrip }: PlannerPagePro
     };
   }, []);
 
-  function notify(message: string) {
+  function notify(message: string, undo?: () => void) {
     setToast(message);
+    setToastUndo(() => undo ?? null);
     if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
-    toastTimerRef.current = window.setTimeout(() => setToast(null), 2600);
+    toastTimerRef.current = window.setTimeout(() => {
+      setToast(null);
+      setToastUndo(null);
+    }, undo ? 6000 : 2600);
   }
 
   function applyUserAction(action: TripAction): boolean {
@@ -406,6 +426,14 @@ export default function PlannerPage({ credentials, bundledTrip }: PlannerPagePro
   }
 
   function handleMapClick(coord: LngLat) {
+    // 先确认再落点，平移地图手抖不会误加点。
+    setPendingPoint(coord);
+  }
+
+  function confirmPendingPoint() {
+    if (!pendingPoint) return;
+    const coord = pendingPoint;
+    setPendingPoint(null);
     void addMapPoint(coord);
   }
 
@@ -491,6 +519,26 @@ export default function PlannerPage({ credentials, bundledTrip }: PlannerPagePro
 
   function handlePointRename(id: string, name: string) {
     applyUserAction({ type: 'UPDATE_POINT', id, patch: { name } });
+  }
+
+  function handlePointReorder(id: string, beforeId: string | null) {
+    applyUserAction({ type: 'REORDER_POINT', id, beforeId });
+  }
+
+  function handleRemovePoint(id: string) {
+    const current = stateRef.current.points;
+    const index = current.findIndex((point) => point.id === id);
+    if (index < 0) return;
+    const point = current[index];
+    if (!applyUserAction({ type: 'REMOVE_POINT', id })) return;
+
+    const beforeId = current[index + 1]?.id ?? null;
+    notify(`已删除「${shortName(point.name, stateRef.current.city)}」`, () => {
+      if (stateRef.current.points.some((item) => item.id === point.id)) return;
+      if (applyUserAction({ type: 'ADD_POINT', point })) {
+        applyUserAction({ type: 'REORDER_POINT', id: point.id, beforeId });
+      }
+    });
   }
 
   const pointsKey = state.points
@@ -739,7 +787,7 @@ export default function PlannerPage({ credentials, bundledTrip }: PlannerPagePro
   }, [
     mapReady,
     mobileTab,
-    sheetCollapsed,
+    sheetState,
     leftCollapsed,
     rightCollapsed,
     activeDay,
@@ -1023,14 +1071,14 @@ export default function PlannerPage({ credentials, bundledTrip }: PlannerPagePro
 
         <aside
           className={`left-panel ${mobileTab === 'route' ? 'mobile-inactive' : ''} ${
-            sheetCollapsed ? 'sheet-collapsed' : ''
-          } ${leftCollapsed ? 'is-collapsed' : ''}`}
+            sheetState === 'collapsed' ? 'sheet-collapsed' : ''
+          } ${sheetState === 'half' ? 'sheet-half' : ''} ${leftCollapsed ? 'is-collapsed' : ''}`}
         >
           <SheetHandle
-            collapsed={sheetCollapsed}
+            sheet={sheetState}
             title="标点"
             summary={`${state.points.length} 个点`}
-            onToggle={() => setSheetCollapsed((value) => !value)}
+            onToggle={() => setSheetState((value) => NEXT_SHEET_STATE[value])}
           />
           <PanelHandle
             side="left"
@@ -1062,9 +1110,8 @@ export default function PlannerPage({ credentials, bundledTrip }: PlannerPagePro
             onMove={(id, direction) => {
               applyUserAction({ type: 'MOVE_POINT', id, direction });
             }}
-            onRemove={(id) => {
-              applyUserAction({ type: 'REMOVE_POINT', id });
-            }}
+            onRemove={handleRemovePoint}
+            onReorderPoint={handlePointReorder}
             onClear={handleClear}
             onLocate={(point) =>
               mapCanvasRef.current?.focusPoint(point.coord)
@@ -1074,14 +1121,14 @@ export default function PlannerPage({ credentials, bundledTrip }: PlannerPagePro
 
         <aside
           className={`right-panel ${mobileTab === 'points' ? 'mobile-inactive' : ''} ${
-            sheetCollapsed ? 'sheet-collapsed' : ''
-          } ${rightCollapsed ? 'is-collapsed' : ''}`}
+            sheetState === 'collapsed' ? 'sheet-collapsed' : ''
+          } ${sheetState === 'half' ? 'sheet-half' : ''} ${rightCollapsed ? 'is-collapsed' : ''}`}
         >
           <SheetHandle
-            collapsed={sheetCollapsed}
+            sheet={sheetState}
             title="路线"
             summary={`${state.legs.length} 段`}
-            onToggle={() => setSheetCollapsed((value) => !value)}
+            onToggle={() => setSheetState((value) => NEXT_SHEET_STATE[value])}
           />
           <PanelHandle
             side="right"
@@ -1141,7 +1188,7 @@ export default function PlannerPage({ credentials, bundledTrip }: PlannerPagePro
             className={mobileTab === 'points' ? 'active' : ''}
             onClick={() => {
               setMobileTab('points');
-              setSheetCollapsed(false);
+              setSheetState('expanded');
             }}
           >
             标点
@@ -1154,7 +1201,7 @@ export default function PlannerPage({ credentials, bundledTrip }: PlannerPagePro
             className={mobileTab === 'route' ? 'active' : ''}
             onClick={() => {
               setMobileTab('route');
-              setSheetCollapsed(false);
+              setSheetState('expanded');
             }}
           >
             路线
@@ -1164,7 +1211,38 @@ export default function PlannerPage({ credentials, bundledTrip }: PlannerPagePro
 
         {toast ? (
           <div className="toast" role="status">
-            {toast}
+            <span>{toast}</span>
+            {toastUndo ? (
+              <button
+                type="button"
+                className="toast-undo"
+                onClick={() => {
+                  const undo = toastUndo;
+                  setToast(null);
+                  setToastUndo(null);
+                  undo();
+                }}
+              >
+                撤销
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+
+        {pendingPoint ? (
+          <div className="map-confirm" role="dialog" aria-label="确认添加标点">
+            <strong>在这里加一个点？</strong>
+            <small>
+              第 {activeDay} 天 · {pendingPoint.lng.toFixed(5)}, {pendingPoint.lat.toFixed(5)}
+            </small>
+            <div className="map-confirm-actions">
+              <button type="button" className="primary-button compact" onClick={confirmPendingPoint}>
+                添加
+              </button>
+              <button type="button" className="text-button" onClick={() => setPendingPoint(null)}>
+                取消
+              </button>
+            </div>
           </div>
         ) : null}
 

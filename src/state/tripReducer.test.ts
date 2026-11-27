@@ -238,4 +238,56 @@ describe('tripReducer', () => {
       ['b', 3],
     ]);
   });
+
+  it('组内拖拽：移到目标点之前，顺序不变量保持', () => {
+    let state = tripReducer(base, {
+      type: 'ADD_POINT',
+      point: point('a', 'A', 120, 30, 1, 'am'),
+    });
+    state = tripReducer(state, {
+      type: 'ADD_POINT',
+      point: point('b', 'B', 121, 31, 1, 'am'),
+    });
+    state = tripReducer(state, {
+      type: 'ADD_POINT',
+      point: point('c', 'C', 122, 32, 1, 'am'),
+    });
+    state = tripReducer(state, {
+      type: 'ADD_POINT',
+      point: point('d', 'D', 123, 33, 1, 'pm'),
+    });
+
+    const moved = tripReducer(state, {
+      type: 'REORDER_POINT',
+      id: 'c',
+      beforeId: 'a',
+    });
+    expect(moved.points.map((item) => item.id)).toEqual(['c', 'a', 'b', 'd']);
+
+    const toTail = tripReducer(moved, {
+      type: 'REORDER_POINT',
+      id: 'c',
+      beforeId: null,
+    });
+    expect(toTail.points.map((item) => item.id)).toEqual(['a', 'b', 'c', 'd']);
+  });
+
+  it('组内拖拽：跨时段目标被拒绝，原顺序不变', () => {
+    let state = tripReducer(base, {
+      type: 'ADD_POINT',
+      point: point('a', 'A', 120, 30, 1, 'am'),
+    });
+    state = tripReducer(state, {
+      type: 'ADD_POINT',
+      point: point('b', 'B', 121, 31, 1, 'pm'),
+    });
+
+    const blocked = tripReducer(state, {
+      type: 'REORDER_POINT',
+      id: 'a',
+      beforeId: 'b',
+    });
+    expect(blocked.points.map((item) => item.id)).toEqual(['a', 'b']);
+    expect(blocked).toBe(state);
+  });
 });
