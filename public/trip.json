@@ -1,16 +1,28 @@
 {
   "version": 1,
-  "savedAt": 1794370814301,
+  "savedAt": 1795791090032,
   "points": [
+    {
+      "id": "61f6094b-906d-4280-a93b-6cf884b9db35",
+      "name": "浙江省杭州市上城区南星街道杭州西湖风景名胜区杭州西湖风景名胜区-杭州白塔公园",
+      "coord": {
+        "lng": 120.141553,
+        "lat": 30.199737
+      },
+      "address": "浙江省杭州市上城区南星街道杭州西湖风景名胜区杭州西湖风景名胜区-杭州白塔公园",
+      "source": "map",
+      "day": 1,
+      "slot": "am"
+    },
     {
       "id": "1d8840c9-15b3-4987-8f8b-2508fee03de9",
       "name": "浙江省杭州市西湖区西湖街道杭州西湖风景名胜区九溪烟树",
       "coord": {
-        "lng": 120.112957,
-        "lat": 30.202387
+        "lng": 120.112629,
+        "lat": 30.202245
       },
       "address": "浙江省杭州市西湖区西湖街道杭州西湖风景名胜区九溪烟树",
-      "source": "map",
+      "source": "search",
       "day": 1,
       "slot": "am"
     },
@@ -22,7 +34,7 @@
         "lat": 30.207394
       },
       "address": "浙江省杭州市西湖区西湖街道杭州西湖风景名胜区十里琅珰",
-      "source": "map",
+      "source": "search",
       "day": 1,
       "slot": "am"
     },
@@ -34,7 +46,7 @@
         "lat": 30.191315
       },
       "address": "浙江省杭州市西湖区西湖街道杭州西湖风景名胜区云栖竹径",
-      "source": "map",
+      "source": "search",
       "day": 1,
       "slot": "am"
     },
@@ -46,7 +58,7 @@
         "lat": 30.265192
       },
       "address": "浙江省杭州市西湖区古荡街道天目山路一汽大众浙江省直4S店",
-      "source": "map",
+      "source": "search",
       "day": 2,
       "slot": "am"
     },
@@ -58,7 +70,7 @@
         "lat": 30.248291
       },
       "address": "浙江省杭州市西湖区留下街道杭州西湖风景名胜区法华寺",
-      "source": "map",
+      "source": "search",
       "day": 2,
       "slot": "am"
     },
@@ -70,7 +82,7 @@
         "lat": 30.243813
       },
       "address": "浙江省杭州市西湖区西湖街道杭州西湖风景名胜区",
-      "source": "map",
+      "source": "search",
       "day": 2,
       "slot": "am"
     },
@@ -82,7 +94,7 @@
         "lat": 30.24267
       },
       "address": "浙江省杭州市西湖区西湖街道杭州西湖风景名胜区杭州西湖风景名胜区-韬光寺",
-      "source": "map",
+      "source": "search",
       "day": 2,
       "slot": "am"
     },
@@ -94,7 +106,7 @@
         "lat": 30.240948
       },
       "address": "浙江省杭州市西湖区西湖街道杭州西湖风景名胜区灵隐景区",
-      "source": "map",
+      "source": "search",
       "day": 2,
       "slot": "am"
     },
@@ -106,7 +118,7 @@
         "lat": 30.239127
       },
       "address": "浙江省杭州市西湖区西湖街道杭州西湖风景名胜区永福寺",
-      "source": "map",
+      "source": "search",
       "day": 2,
       "slot": "am"
     },
@@ -118,7 +130,7 @@
         "lat": 30.233661
       },
       "address": "浙江省杭州市西湖区西湖街道杭州西湖风景名胜区中天竺法净禅寺",
-      "source": "map",
+      "source": "search",
       "day": 2,
       "slot": "am"
     },
@@ -130,7 +142,7 @@
         "lat": 30.237205
       },
       "address": "浙江省杭州市西湖区西湖街道杭州西湖风景名胜区杭州西湖风景名胜区-法镜寺",
-      "source": "map",
+      "source": "search",
       "day": 2,
       "slot": "am"
     },
@@ -142,7 +154,7 @@
         "lat": 30.261646
       },
       "address": "浙江省杭州市拱墅区武林街道武林街道长寿社区杭州武林夜市",
-      "source": "map",
+      "source": "search",
       "day": 2,
       "slot": "night"
     },
@@ -154,7 +166,7 @@
         "lat": 30.245937
       },
       "address": "浙江省杭州市上城区清波街道定安路(地铁站)定安名都",
-      "source": "map",
+      "source": "search",
       "day": 3,
       "slot": "am"
     },
@@ -166,7 +178,7 @@
         "lat": 30.232952
       },
       "address": "浙江省杭州市西湖区西湖街道长桥公园杭州西湖风景名胜区-长桥公园",
-      "source": "map",
+      "source": "search",
       "day": 3,
       "slot": "am"
     },
@@ -178,7 +190,7 @@
         "lat": 30.232353
       },
       "address": "浙江省杭州市西湖区西湖街道杭州西湖风景名胜区杭州西湖风景名胜区-花港观鱼",
-      "source": "map",
+      "source": "search",
       "day": 3,
       "slot": "am"
     },
@@ -190,7 +202,7 @@
         "lat": 30.249362
       },
       "address": "浙江省杭州市西湖区西湖街道杭州西湖风景名胜区杭州西湖风景名胜区-曲院风荷",
-      "source": "map",
+      "source": "search",
       "day": 3,
       "slot": "am"
     },
@@ -202,7 +214,7 @@
         "lat": 30.240381
       },
       "address": "浙江省杭州市西湖区西湖街道杭州西湖风景名胜区杭州西湖风景名胜区-苏堤春晓",
-      "source": "map",
+      "source": "search",
       "day": 3,
       "slot": "am"
     },
@@ -214,7 +226,7 @@
         "lat": 30.238859
       },
       "address": "浙江省杭州市西湖区西湖街道西湖杭州西湖风景名胜区-三潭印月",
-      "source": "map",
+      "source": "search",
       "day": 3,
       "slot": "am"
     },
@@ -226,7 +238,7 @@
         "lat": 30.252842
       },
       "address": "浙江省杭州市西湖区西湖街道杭州西湖风景名胜区中山公园",
-      "source": "map",
+      "source": "search",
       "day": 3,
       "slot": "am"
     },
@@ -238,7 +250,7 @@
         "lat": 30.259052
       },
       "address": "浙江省杭州市西湖区西湖街道杭州西湖风景名胜区",
-      "source": "map",
+      "source": "search",
       "day": 3,
       "slot": "am"
     },
@@ -250,7 +262,7 @@
         "lat": 30.253333
       },
       "address": "浙江省杭州市西湖区灵隐街道杭州道荣高尔夫俱乐部杭州植物园",
-      "source": "map",
+      "source": "search",
       "day": 3,
       "slot": "pm"
     },
@@ -262,7 +274,7 @@
         "lat": 30.317216
       },
       "address": "浙江省杭州市拱墅区上塘街道拱宸桥东地铁站B口宸麟府",
-      "source": "map",
+      "source": "search",
       "day": 4,
       "slot": "am"
     },
@@ -274,7 +286,7 @@
         "lat": 30.318096
       },
       "address": "浙江省杭州市拱墅区拱宸桥街道京杭运河拱宸桥",
-      "source": "map",
+      "source": "search",
       "day": 4,
       "slot": "am"
     },
@@ -286,7 +298,7 @@
         "lat": 30.317989
       },
       "address": "浙江省杭州市拱墅区拱宸桥街道桥西直街4号拱宸桥西历史文化街区",
-      "source": "map",
+      "source": "search",
       "day": 4,
       "slot": "am"
     },
@@ -298,7 +310,7 @@
         "lat": 30.316147
       },
       "address": "浙江省杭州市拱墅区拱宸桥街道小河路336号中国伞博物馆",
-      "source": "map",
+      "source": "search",
       "day": 4,
       "slot": "am"
     },
@@ -310,7 +322,7 @@
         "lat": 30.315632
       },
       "address": "浙江省杭州市拱墅区拱宸桥街道杭州工艺美术博物馆",
-      "source": "map",
+      "source": "search",
       "day": 4,
       "slot": "am"
     },
@@ -322,7 +334,7 @@
         "lat": 30.315416
       },
       "address": "浙江省杭州市拱墅区拱宸桥街道小河路274号杭州工艺美术博物馆",
-      "source": "map",
+      "source": "search",
       "day": 4,
       "slot": "am"
     },
@@ -346,7 +358,7 @@
         "lat": 30.123282
       },
       "address": "浙江省杭州市萧山区闻堰街道湘湖路湘湖国家旅游度假区",
-      "source": "map",
+      "source": "search",
       "day": 4,
       "slot": "pm"
     },
@@ -358,7 +370,7 @@
         "lat": 30.130043
       },
       "address": "浙江省杭州市萧山区闻堰街道湘湖路湘湖智慧停车场",
-      "source": "map",
+      "source": "search",
       "day": 4,
       "slot": "pm"
     },
@@ -370,7 +382,7 @@
         "lat": 30.241604
       },
       "address": "浙江省杭州市临安区青山湖街道青山湖绿道青山湖景区",
-      "source": "map",
+      "source": "search",
       "day": 5,
       "slot": "am"
     }
