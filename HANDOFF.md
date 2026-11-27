@@ -120,6 +120,8 @@ npm run build:static   # 生成 GitHub Pages 用的静态产物（VITE_STATIC=1�
 - 已上线：多点标点、按天/时段规划、四种出行方式、景区降级、简称、改名、拖拽排序、分享链接、仓库行程同步。
 - **多人实时协作未上线**：`server/collab-server.ts`（WebSocket 房间）和 `deno/server.ts` 都写好了，但静态托管没有后端，`VITE_STATIC=1` 时协作入口被隐藏（见 `src/config/build.ts` 的 `IS_STATIC_BUILD`）。要有真协作，需要一台能跑 Node 且国内可访问的服务器。
 - `public/trip.json` 是**手动/令牌**推送的快照，和用户本机 localStorage 是两份，可能不同步；用户改完要点「保存到仓库」。
+  用户已经在用这条路：仓库里会出现形如 `同步行程 2026/11/27 22:57:29` 的提交，每次都会触发一次 Pages 重新构建。
+  当前线上行程：32 个点、第 1–5 天、步行。
 - GitHub Token 存在用户浏览器 localStorage 里（明文），需提示定期更换。
 - 名字缩写是启发式，遇到切得难看的情况，靠用户点铅笔改名兜底。
 - `MAX_POINTS = 60`、`MAX_DAYS = 14`，改大要考虑高德配额和 URL 长度（分享链接会很长）。
