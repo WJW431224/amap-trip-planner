@@ -66,7 +66,12 @@ export function saveCloudConfig(config: CloudConfig): void {
   }
 }
 
-function toSnapshot(file: Partial<CloudTripFile> | null | undefined): TripSnapshot | null {
+export interface CloudTrip {
+  snapshot: TripSnapshot;
+  savedAt: number;
+}
+
+function toCloudTrip(file: Partial<CloudTripFile> | null | undefined): CloudTrip | null {
   if (!file || !Array.isArray(file.points)) return null;
 
   // 仓库里的文件可能没写 id / source，这里补上，否则会被 sanitize 全部丢掉。
@@ -76,8 +81,9 @@ function toSnapshot(file: Partial<CloudTripFile> | null | undefined): TripSnapsh
     source: 'search' as const,
   }));
 
-  const points = sanitizePoints(rawPoints) ?? [];
-  if (!points.length) return null;
+  const points = sanitizePoints(rawPoints);
+  // 空数组是合法的「已清空」状态；null 才是数据损坏。
+  if (!points) return null;
 
   const mode: TravelMode = MODES.includes(file.mode as TravelMode)
     ? (file.mode as TravelMode)
@@ -87,17 +93,23 @@ function toSnapshot(file: Partial<CloudTripFile> | null | undefined): TripSnapsh
       ? file.city.trim()
       : DEFAULT_CITY;
 
-  return { points, mode, city };
+  return {
+    snapshot: { points, mode, city },
+    savedAt:
+      typeof file.savedAt === 'number' && Number.isFinite(file.savedAt)
+        ? file.savedAt
+        : 0,
+  };
 }
 
 /** 读站点自带的 trip.json（同源，不走外网）。 */
-export async function fetchBundledTrip(): Promise<TripSnapshot | null> {
+export async function fetchBundledTrip(): Promise<CloudTrip | null> {
   try {
     const response = await fetch(new URL('trip.json', document.baseURI).toString(), {
       cache: 'no-store',
     });
     if (!response.ok) return null;
-    return toSnapshot((await response.json()) as CloudTripFile);
+    return toCloudTrip((await response.json()) as CloudTripFile);
   } catch {
     return null;
   }
@@ -131,7 +143,7 @@ function apiUrl(config: CloudConfig): string {
 /** 从仓库读行程（需要 token 才能读私有仓库；公开仓库不带 token 也能读）。 */
 export async function fetchRemoteTrip(
   config: CloudConfig,
-): Promise<TripSnapshot | null> {
+): Promise<CloudTrip | null> {
   const response = await fetch(`${apiUrl(config)}?ref=${encodeURIComponent(config.branch)}`, {
     headers: config.token
       ? { authorization: `Bearer ${config.token}`, accept: 'application/vnd.github+json' }
@@ -146,7 +158,7 @@ export async function fetchRemoteTrip(
 
   const data = (await response.json()) as ContentsResponse;
   if (!data.content) return null;
-  return toSnapshot(JSON.parse(decodeBase64(data.content)) as CloudTripFile);
+  return toCloudTrip(JSON.parse(decodeBase64(data.content)) as CloudTripFile);
 }
 
 /** 把当前行程写回仓库，触发一次 Pages 重新部署。 */

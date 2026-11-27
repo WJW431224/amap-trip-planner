@@ -26,7 +26,21 @@ import {
 import type { LegPlanResult } from '../features/routes/planner';
 import { createTripState, tripReducer } from '../state/tripReducer';
 import type { TripAction, TripSnapshot } from '../state/tripReducer';
-import { saveTrip } from '../state/persistence';
+import {
+  saveTrip,
+  readLocalSavedAt,
+  touchLocalSavedAt,
+  setLocalSavedAt,
+  readAutoSaveEnabled,
+  tripFingerprint,
+} from '../state/persistence';
+import {
+  fetchBundledTrip,
+  fetchRemoteTrip,
+  pushTripToRepo,
+  readCloudConfig,
+  type CloudTrip,
+} from '../state/cloud';
 import {
   buildShareUrl,
   buildTripUrl,
@@ -58,8 +72,8 @@ import {
 
 interface PlannerPageProps {
   credentials: AmapCredentials;
-  /** 仓库里的 trip.json，本机和链接都没有行程时用它兜底。 */
-  bundledTrip?: TripSnapshot | null;
+  /** 仓库里的 trip.json（带保存时间），和本机行程比新旧后取最新。 */
+  bundledTrip?: CloudTrip | null;
 }
 
 interface SheetHandleProps {
@@ -189,10 +203,11 @@ function resolveAddress(
 }
 
 export default function PlannerPage({ credentials, bundledTrip }: PlannerPageProps) {
+  const initialTripRef = useRef<ReturnType<typeof loadInitialTrip> | null>(null);
   const [state, dispatch] = useReducer(tripReducer, null, () => {
-    const initial = loadInitialTrip();
-    if (initial.points.length) return createTripState(initial);
-    return createTripState(bundledTrip ?? initial);
+    const initial = loadInitialTrip(bundledTrip);
+    initialTripRef.current = initial;
+    return createTripState(initial.snapshot);
   });
   const [mapReady, setMapReady] = useState(false);
   const [mapError, setMapError] = useState<AmapErrorInfo | null>(null);
@@ -236,6 +251,39 @@ export default function PlannerPage({ credentials, bundledTrip }: PlannerPagePro
   stateRef.current = state;
   const activeDayRef = useRef(activeDay);
   activeDayRef.current = activeDay;
+
+  // ---- 双端同步：本机时间戳 vs 仓库 savedAt，谁新用谁 ----
+  const initial = initialTripRef.current;
+  const savedAtRef = useRef(
+    initial?.savedAt || readLocalSavedAt() || bundledTrip?.savedAt || 0,
+  );
+  // 页面挂载时的内容指纹：用于识别「用户真的改了」，避免把旧数据自动推回仓库。
+  const mountFingerprintRef = useRef(
+    tripFingerprint({ points: state.points, mode: state.mode, city: state.city }),
+  );
+  const cloudFingerprintRef = useRef<string | null>(null);
+  const pushInFlightRef = useRef(false);
+  const pushQueuedRef = useRef(false);
+  const pullInFlightRef = useRef(false);
+  const pushFailNotifiedRef = useRef(false);
+  const [syncLabel, setSyncLabel] = useState('');
+
+  const snapshotOf = (current: typeof state): TripSnapshot => ({
+    points: current.points,
+    mode: current.mode,
+    city: current.city,
+  });
+
+  /** 用一份外部行程覆盖本机（仓库读回、自动拉取共用）。 */
+  function hydrateFromCloud(trip: CloudTrip, message?: string) {
+    // 本机时间戳记为仓库版本的时间：之后的本机编辑才会被视为「更新」。
+    savedAtRef.current = trip.savedAt;
+    setLocalSavedAt(trip.savedAt);
+    cloudFingerprintRef.current = tripFingerprint(trip.snapshot);
+    dispatch({ type: 'HYDRATE', snapshot: trip.snapshot });
+    setActiveDay(Math.max(1, ...trip.snapshot.points.map((point) => point.day)));
+    if (message) notify(message);
+  }
 
   const maxDay = Math.max(
     activeDay,
@@ -697,17 +745,102 @@ export default function PlannerPage({ credentials, bundledTrip }: PlannerPagePro
     activeDay,
   ]);
 
+  // 本机持久化：每次内容变化打一个时间戳，作为「谁新用谁」的比较依据。
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      saveTrip({
-        points: state.points,
-        mode: state.mode,
-        city: state.city,
-      });
+      const snapshot = snapshotOf(stateRef.current);
+      saveTrip(snapshot);
+      const fingerprint = tripFingerprint(snapshot);
+      if (fingerprint !== mountFingerprintRef.current) {
+        // 用户真的改过（不是刚加载/刚同步），本机视为最新版本。
+        savedAtRef.current = touchLocalSavedAt();
+        void maybeAutoPush(snapshot, fingerprint);
+      }
     }, 350);
 
     return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.points, state.mode, state.city]);
+
+  /** 配了 Token 且开着自动保存时，把本机改动写回仓库（合并抖动、内容不变不提交）。 */
+  async function maybeAutoPush(snapshot: TripSnapshot, fingerprint: string) {
+    if (!readAutoSaveEnabled()) return;
+    const config = readCloudConfig();
+    if (!config.token) return;
+    if (roomId) return; // 协作房间另有同步通道，避免双写。
+    if (cloudFingerprintRef.current === fingerprint) return; // 和仓库一致，不提交。
+    if (pushInFlightRef.current) {
+      pushQueuedRef.current = true;
+      return;
+    }
+
+    pushInFlightRef.current = true;
+    pushQueuedRef.current = false;
+    setSyncLabel('同步中');
+    try {
+      await pushTripToRepo(config, snapshot);
+      cloudFingerprintRef.current = fingerprint;
+      pushFailNotifiedRef.current = false;
+      setSyncLabel('已同步');
+    } catch {
+      setSyncLabel('同步失败');
+      if (!pushFailNotifiedRef.current) {
+        pushFailNotifiedRef.current = true;
+        notify('自动保存到仓库失败，可在设置里手动保存或检查 Token');
+      }
+    } finally {
+      pushInFlightRef.current = false;
+      if (pushQueuedRef.current) {
+        pushQueuedRef.current = false;
+        const latest = snapshotOf(stateRef.current);
+        void maybeAutoPush(latest, tripFingerprint(latest));
+      }
+    }
+  }
+
+  /** 拉取仓库最新行程；比本机新才覆盖，编辑中不打断。 */
+  async function pullCloudTrip(options?: { silent?: boolean }) {
+    if (pullInFlightRef.current || pushInFlightRef.current) return;
+    if (roomId) return;
+    pullInFlightRef.current = true;
+    try {
+      const config = readCloudConfig();
+      // 有 Token 走 GitHub API（提交后立刻可读）；没有就走站点副本（约 1 分钟延迟）。
+      const trip = config.token
+        ? await fetchRemoteTrip(config).catch(() => fetchBundledTrip())
+        : await fetchBundledTrip();
+      if (!trip) return;
+
+      const fingerprint = tripFingerprint(trip.snapshot);
+      cloudFingerprintRef.current = fingerprint;
+      const localFingerprint = tripFingerprint(snapshotOf(stateRef.current));
+      if (fingerprint === localFingerprint) return;
+
+      if (trip.savedAt > savedAtRef.current) {
+        hydrateFromCloud(trip, options?.silent ? undefined : '已同步到最新行程');
+      }
+    } catch {
+      // 拉取失败静默，下次再试。
+    } finally {
+      pullInFlightRef.current = false;
+    }
+  }
+
+  // 自动拉取：切回前台、恢复网络时立即查一次，之后每 60 秒查一次（页面可见时）。
+  useEffect(() => {
+    const check = () => {
+      if (document.visibilityState === 'visible') void pullCloudTrip({ silent: true });
+    };
+    const timer = window.setInterval(check, 60_000);
+    document.addEventListener('visibilitychange', check);
+    window.addEventListener('online', check);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', check);
+      window.removeEventListener('online', check);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function handleOpenAmap(legId: string) {
     const leg = state.legs.find((item) => item.id === legId);
@@ -835,6 +968,16 @@ export default function PlannerPage({ credentials, bundledTrip }: PlannerPagePro
             <Share size={15} />
             <span>分享</span>
           </button>
+          {syncLabel ? (
+            <button
+              type="button"
+              className={`topbar-button sync-indicator ${syncLabel === '同步失败' ? 'is-error' : ''}`}
+              onClick={() => setSyncOpen(true)}
+              title="仓库同步状态，点击打开设置"
+            >
+              <span>{syncLabel}</span>
+            </button>
+          ) : null}
           <button
             type="button"
             className="icon-button"
@@ -1070,10 +1213,10 @@ export default function PlannerPage({ credentials, bundledTrip }: PlannerPagePro
         open={syncOpen}
         snapshot={{ points: state.points, mode: state.mode, city: state.city }}
         onClose={() => setSyncOpen(false)}
-        onLoaded={(trip) => {
-          dispatch({ type: 'HYDRATE', snapshot: trip });
-          setActiveDay(Math.max(1, ...trip.points.map((point) => point.day)));
-          notify('已从仓库读回行程');
+        onLoaded={(trip) => hydrateFromCloud(trip, '已从仓库读回行程')}
+        onSynced={(fingerprint) => {
+          cloudFingerprintRef.current = fingerprint;
+          setSyncLabel('已同步');
         }}
         onResetKey={() => {
           setSyncOpen(false);

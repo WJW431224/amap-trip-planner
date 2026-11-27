@@ -1,7 +1,15 @@
 import type { TravelMode, TimeSlot, TripPoint } from '../types';
 import { MAX_DAYS, MAX_POINTS } from '../types';
 import type { TripSnapshot } from './tripReducer';
-import { loadSavedTrip, DEFAULT_CITY, MODES } from './persistence';
+import type { CloudTrip } from './cloud';
+import {
+  loadSavedTrip,
+  readLocalSavedAt,
+  touchLocalSavedAt,
+  migrateLocalSavedAt,
+  DEFAULT_CITY,
+  MODES,
+} from './persistence';
 
 interface SharedPoint {
   n: string;
@@ -155,16 +163,50 @@ export function clearShareHash(): void {
   );
 }
 
-export function loadInitialTrip(): TripSnapshot {
+export interface InitialTrip {
+  snapshot: TripSnapshot;
+  /** 这份行程最后一次变更的时间，用于和仓库版本比较新旧。 */
+  savedAt: number;
+  fromUrl: boolean;
+  fromLocal: boolean;
+}
+
+/**
+ * 数据优先级：?trip= 参数 > 本机与仓库里较新的一份 > 空。
+ * 仓库副本（站点自带的 trip.json）带 savedAt，本机也有变更时间戳，
+ * 谁新用谁，双端才能看到同一份行程。
+ */
+export function loadInitialTrip(bundled?: CloudTrip | null): InitialTrip {
+  migrateLocalSavedAt();
   const shared = consumeShareFromUrl();
-  if (shared) return shared;
+  if (shared) {
+    // 链接行程视为刚收到的最新版本，落一次时间戳，避免被旧仓库副本盖掉。
+    return {
+      snapshot: shared,
+      savedAt: touchLocalSavedAt(),
+      fromUrl: true,
+      fromLocal: false,
+    };
+  }
 
   const saved = loadSavedTrip();
-  if (saved) return saved;
+  const localAt = Math.max(saved?.savedAt ?? 0, readLocalSavedAt());
+  const cloudAt = bundled?.savedAt ?? 0;
+
+  if (saved && (!bundled || localAt >= cloudAt)) {
+    return { snapshot: saved.snapshot, savedAt: localAt, fromUrl: false, fromLocal: true };
+  }
+  if (bundled) {
+    return { snapshot: bundled.snapshot, savedAt: cloudAt, fromUrl: false, fromLocal: false };
+  }
+  if (saved) {
+    return { snapshot: saved.snapshot, savedAt: localAt, fromUrl: false, fromLocal: true };
+  }
 
   return {
-    points: [],
-    mode: 'driving',
-    city: DEFAULT_CITY,
+    snapshot: { points: [], mode: 'driving', city: DEFAULT_CITY },
+    savedAt: 0,
+    fromUrl: false,
+    fromLocal: false,
   };
 }

@@ -6,14 +6,22 @@ import {
   readCloudConfig,
   saveCloudConfig,
   type CloudConfig,
+  type CloudTrip,
 } from '../state/cloud';
+import {
+  readAutoSaveEnabled,
+  writeAutoSaveEnabled,
+  tripFingerprint,
+} from '../state/persistence';
 import type { TripSnapshot } from '../state/tripReducer';
 
 interface SyncDialogProps {
   open: boolean;
   snapshot: TripSnapshot;
   onClose: () => void;
-  onLoaded: (snapshot: TripSnapshot) => void;
+  onLoaded: (trip: CloudTrip) => void;
+  /** 手动保存成功后通知主页面，刷新同步状态、避免重复自动提交。 */
+  onSynced: (fingerprint: string) => void;
   onResetKey: () => void;
 }
 
@@ -22,9 +30,11 @@ export default function SyncDialog({
   snapshot,
   onClose,
   onLoaded,
+  onSynced,
   onResetKey,
 }: SyncDialogProps) {
   const [config, setConfig] = useState<CloudConfig>(readCloudConfig);
+  const [autoSave, setAutoSave] = useState(readAutoSaveEnabled);
   const [status, setStatus] = useState<string | null>(null);
   const [busy, setBusy] = useState<'save' | 'load' | null>(null);
 
@@ -44,15 +54,12 @@ export default function SyncDialog({
   }
 
   async function handleSave() {
-    if (!snapshot.points.length) {
-      setStatus('还没有标点，先标几个再同步');
-      return;
-    }
     setBusy('save');
     setStatus('正在写入 GitHub…');
     try {
       await pushTripToRepo(config, snapshot);
-      setStatus('已写入仓库，大约 1 分钟后网站会自动更新');
+      onSynced(tripFingerprint(snapshot));
+      setStatus('已写入仓库，其他设备打开或切回页面时会自动更新');
     } catch (error) {
       setStatus(error instanceof Error ? error.message : '写入失败');
     } finally {
@@ -122,6 +129,22 @@ export default function SyncDialog({
               <input value={config.branch} onChange={(event) => update({ branch: event.target.value.trim() })} />
             </label>
           </div>
+
+          <label className="sync-field sync-check">
+            <input
+              type="checkbox"
+              checked={autoSave}
+              onChange={(event) => {
+                setAutoSave(event.target.checked);
+                writeAutoSaveEnabled(event.target.checked);
+              }}
+            />
+            <span>改动后自动保存到仓库（仅填了 Token 的设备生效）</span>
+          </label>
+          <p className="share-tip">
+            所有设备打开或切回页面时，会自动采用仓库里更新的版本；
+            没填 Token 的设备只读不写。两端同时改动时，以最后保存的为准。
+          </p>
 
           <div className="sync-buttons">
             <button type="button" className="primary-button" onClick={handleSave} disabled={busy !== null}>

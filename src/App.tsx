@@ -5,13 +5,12 @@ import {
   resolveCredentialsAsync,
   type AmapCredentials,
 } from './config/credentials';
-import { fetchBundledTrip } from './state/cloud';
-import type { TripSnapshot } from './state/tripReducer';
+import { fetchBundledTrip, type CloudTrip } from './state/cloud';
 
 export default function App() {
   // undefined = 还在读取配置，null = 没配置，需要引导页。
   const [credentials, setCredentials] = useState<AmapCredentials | null | undefined>(undefined);
-  const [bundledTrip, setBundledTrip] = useState<TripSnapshot | null>(null);
+  const [bundledTrip, setBundledTrip] = useState<CloudTrip | null>(null);
 
   useEffect(() => {
     let alive = true;
